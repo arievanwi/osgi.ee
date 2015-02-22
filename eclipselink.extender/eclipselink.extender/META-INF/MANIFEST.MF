@@ -1,0 +1,7 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Eclipselink service extender
+Bundle-SymbolicName: eclipselink.extender
+Bundle-Version: 1.0.0
+Fragment-Host: org.eclipse.persistence.jpa;bundle-version="2.5.2"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

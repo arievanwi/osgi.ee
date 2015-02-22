@@ -1,0 +1,1 @@
+eclipselink.extender.PersistenceProvider osgi.unit.provider=org.eclipse.persistence.jpa.PersistenceProvider
