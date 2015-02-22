@@ -11,7 +11,7 @@ The extender here is meant as a one-stop solution for the following JEE7 standar
 extender is needed with some additional functionality for finding Faces configuration files and tag libraries. This is functionality
 provided by [PAX-WEB][4].
 
-Documentation about the usage of this extender can be found here.
+Documentation about the usage of this extender will be delivered soon and referenced here.
 
 [1]: http://www.osgi.org/Specifications/HomePage
 [2]: http://weld.cdi-spec.org/
