@@ -1,0 +1,10 @@
+<html>
+<head/>
+<body>
+Entity factory management. Takes care of constructing entity managers based on registered entity manager factories. These
+entity managers are registered as services in the OSGi service registry and therefore can be used from various bundles
+to access beans. Suggestion is to limit this behaviour to only one bundle that contains the DAO(s), but in some situations it
+may be required to split DAOs over multiple bundles. The idea of registering entity managers this way and using a global
+transaction manager is from the enroute project.
+</body>
+</html>
