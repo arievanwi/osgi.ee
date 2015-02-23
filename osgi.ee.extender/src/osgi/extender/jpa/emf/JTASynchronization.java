@@ -14,10 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eclipselink.extender;
+package osgi.extender.jpa.emf;
+
+import javax.persistence.EntityManager;
+import javax.transaction.Synchronization;
 
 /**
- * Extender class for eclipse link persistence provider.
+ * Synchronizer for JTA transaction based functionality. 
  */
-public class PersistenceProvider extends org.eclipse.persistence.jpa.PersistenceProvider {
+class JTASynchronization implements Synchronization {
+	private ThreadLocal<EntityManager> local;
+	
+	public JTASynchronization(ThreadLocal<EntityManager> l) {
+		this.local = l;
+	}
+
+	@Override
+	public void afterCompletion(int status) {
+		local.get().close();
+		local.remove();
+	}
+
+	@Override
+	public void beforeCompletion() {
+	}
 }

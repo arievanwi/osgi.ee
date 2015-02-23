@@ -164,7 +164,9 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
 		if (definition.transactionType.isEmpty()) {
 			return PersistenceUnitTransactionType.JTA;
 		}
-		return PersistenceUnitTransactionType.valueOf(definition.transactionType);
+		PersistenceUnitTransactionType type = 
+				PersistenceUnitTransactionType.valueOf(definition.transactionType);
+		return type;
 	}
 
 	@Override

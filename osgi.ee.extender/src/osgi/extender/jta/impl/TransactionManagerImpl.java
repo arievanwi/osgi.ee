@@ -33,12 +33,13 @@ import javax.transaction.TransactionManager;
  * resource local transactions or JTA over multiple database connections (sort of).
  */
 class TransactionManagerImpl implements TransactionManager {
-	private long DEFAULTTIMEOUT = 10000L;
+	private long defaultTimeout;
 	private Map<Thread, TransactionImpl> transactions = new HashMap<>();
 	private Timer timer;
 	
-	TransactionManagerImpl() {
-		setTransactionTimer(DEFAULTTIMEOUT);
+	TransactionManagerImpl(int timeout) {
+		this.defaultTimeout = timeout * 1000;
+		setTransactionTimer(defaultTimeout);
 	}
 	
 	@Override

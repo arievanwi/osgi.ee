@@ -163,7 +163,7 @@ class Wrapper<T> implements InvocationHandler {
 			throws Throwable {
 		T obj = supplier.get();
 		if (obj == null) {
-			throw new Exception("(bugcheck): supplier object for proxy " + proxy + " returned null");
+			throw new Exception("(bugcheck): supplier for proxy returned null (service not present?). Cannot execute " + method);
 		}
 		return method.invoke(obj, args);
 	}

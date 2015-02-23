@@ -32,9 +32,6 @@ import javax.transaction.xa.Xid;
  * @author Arie van Wijngaarden
  */
 public class TransactionImpl implements Transaction {
-	private interface XAHandler {
-		void handle(XAResource resource, Xid xid) throws Exception;
-	}
 	private int status = Status.STATUS_NO_TRANSACTION;
 	private List<Synchronization> toSync = new ArrayList<>();
 	private List<XAResource> resources = new ArrayList<>();
@@ -47,7 +44,11 @@ public class TransactionImpl implements Transaction {
 	
 	@Override
 	public boolean delistResource(XAResource res, int flag) {
-		doWithXAResources((r, id) -> r.end(xid, (status == Status.STATUS_MARKED_ROLLBACK) ? XAResource.TMFAIL : XAResource.TMSUCCESS));
+		try {
+			res.end(xid, (status == Status.STATUS_MARKED_ROLLBACK) ? XAResource.TMFAIL : XAResource.TMSUCCESS);
+		} catch (Exception exc) {
+			exc.printStackTrace();
+		}
 		return true;
 	}
 
@@ -72,23 +73,18 @@ public class TransactionImpl implements Transaction {
 		this.toSync.add(sync);
 	}
 
-	private void doWithXAResources(XAHandler handler) {
-		resources.forEach((r) -> {
-			try {
-				handler.handle(r, xid);
-			} catch (Exception exc) {
-				exc.printStackTrace();
-			}
-		});
-	}
-	
 	@Override
 	public void rollback() {
 		resources.stream().forEach((r) -> delistResource(r, 0));
 		setStatus(Status.STATUS_ROLLING_BACK);
 		toSync.stream().forEach((s) -> s.beforeCompletion());
 		toSync.stream().forEach((s) -> s.afterCompletion(Status.STATUS_ROLLEDBACK));
-		doWithXAResources((r, id) -> r.rollback(id));
+		resources.stream().forEach((r) -> {
+			try {
+				r.rollback(xid);
+			} catch (Exception exc) {
+				exc.printStackTrace();
+			}});
 	}
 	
 	@Override
@@ -100,9 +96,21 @@ public class TransactionImpl implements Transaction {
 			setStatus(Status.STATUS_COMMITTING);
 			resources.stream().forEach((r) -> delistResource(r, 0));
 			toSync.stream().forEach((s) -> s.beforeCompletion());
-			doWithXAResources((r, id) -> r.prepare(id));
+			resources.stream().forEach((r) -> {
+				try {
+					r.prepare(xid);
+				} catch (Exception exc) {
+					exc.printStackTrace();
+				}
+			});
 			toSync.stream().forEach((s) -> s.afterCompletion(Status.STATUS_COMMITTED));
-			doWithXAResources((r, id) -> r.commit(id, true));
+			resources.stream().forEach((r) -> {
+				try {
+					r.commit(xid, true);
+				} catch (Exception exc) {
+					exc.printStackTrace();
+				}
+			});
 		}
 	}
 

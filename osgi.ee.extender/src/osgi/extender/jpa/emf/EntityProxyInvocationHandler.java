@@ -22,7 +22,6 @@ import java.lang.reflect.Method;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
-import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 
@@ -78,60 +77,11 @@ class EntityProxyInvocationHandler implements InvocationHandler {
 		try {
 			EntityTransaction trans = manager.getTransaction();
 			trans.begin();
+			manager.joinTransaction();
 			sync = new ResourceLocalSynchronization(trans, local);
 		} catch (IllegalStateException exc) {
-			manager.joinTransaction();
 			sync = new JTASynchronization(local);
 		}
 		transactionManager.getTransaction().registerSynchronization(sync);
 	}
-
-	static class ResourceLocalSynchronization implements Synchronization {
-		private EntityTransaction trans;
-		private ThreadLocal<EntityManager> local;
-		
-		ResourceLocalSynchronization(EntityTransaction t, ThreadLocal<EntityManager> l) {
-			this.trans = t;
-			this.local = l;
-		}
-	
-		@Override
-		public void afterCompletion(int status) {
-			try {
-				if (status == Status.STATUS_ROLLING_BACK || status == Status.STATUS_MARKED_ROLLBACK || 
-					status == Status.STATUS_ROLLEDBACK) {
-					trans.rollback();
-				}
-				else {
-					trans.commit();
-				}
-				local.get().close();
-				local.remove();
-			} catch (Exception exc) {
-				exc.printStackTrace();
-			}
-		}
-	
-		@Override
-		public void beforeCompletion() {
-		}
-	}
-	
-	static class JTASynchronization implements Synchronization {
-		private ThreadLocal<EntityManager> local;
-		
-		public JTASynchronization(ThreadLocal<EntityManager> l) {
-			this.local = l;
-		}
-
-		@Override
-		public void afterCompletion(int status) {
-			local.get().close();
-			local.remove();
-		}
-
-		@Override
-		public void beforeCompletion() {
-		}
-	}
- }
+}
