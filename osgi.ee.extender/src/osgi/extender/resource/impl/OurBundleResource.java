@@ -25,9 +25,9 @@ import org.osgi.framework.wiring.BundleWiring;
 import osgi.extender.resource.BundleResource;
 
 /**
- * Our own implementation of a bundle resource.
+ * Our own implementation of a bundle resource. Simple wrapping.
  */
-public class OurBundleResource implements BundleResource {
+class OurBundleResource implements BundleResource {
 	private Bundle bundle;
 	private String path;
 	

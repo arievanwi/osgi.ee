@@ -30,7 +30,8 @@ import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * Transaction filter. Starts a transaction as part of a filter. Needs to be set as a filter
- * for a servlet to open and close transactions.
+ * for a servlet to open and close transactions. If no transaction manager is found, the
+ * filter just continues without transaction management.
  */
 public class TransactionFilter implements Filter {
 	private ServiceTracker<TransactionManager, TransactionManager> tracker;
@@ -38,29 +39,28 @@ public class TransactionFilter implements Filter {
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response,
 			FilterChain chain) throws ServletException {
-		TransactionManager manager;
+		TransactionManager manager = tracker.getService();
 		try {
-			manager = tracker.waitForService(2000L);
-		} catch (InterruptedException ex) {
-			Thread.currentThread().interrupt();
-			throw new ServletException(ex);
-		}
-		try {
-			manager.begin();
+			if (manager != null)
+				manager.begin();
 			chain.doFilter(request, response);
-			if (manager.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
-				manager.rollback();
-			}
-			else {
-				manager.commit();
+			if (manager != null) {
+				if (manager.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
+					manager.rollback();
+				}
+				else {
+					manager.commit();
+				}
 			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 			try {
-				manager.rollback();
+				if (manager != null)
+					manager.rollback();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
+			throw new ServletException(ex);
 		}
 	}
 

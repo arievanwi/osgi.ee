@@ -4,7 +4,7 @@ Getting JEE7 to work in OSGi can be a real pain: there are a lot of (open source
 are required for some projects and mismatches in implementation versions.
 
 The extender here is meant as a one-stop solution for the following JEE7 standards on OSGi:
-* CDI 2.1. Implemented using the [Weld][2] CDI reference implementation, that can be downloaded [here][3].
+* CDI 1.2. Implemented using the [Weld][2] CDI reference implementation, that can be downloaded [here][3].
 * JPA 2.1. Implemented using the standard JPA 2.1 interfaces only and tested with Eclipselink.
 * JTA 1.1. The bundle contains a transaction manager that can be used in local solutions in case of the absence of a genuine transaction manager.
 * JSF 2.1. The standard JSF solutions are OSGi aware, but this extender helps in integrating CDI with JSF. For this a standard OSGi web

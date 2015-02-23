@@ -23,6 +23,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.stream.Collectors;
 
+import javax.transaction.NotSupportedException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
 import javax.transaction.Transaction;
@@ -30,7 +31,7 @@ import javax.transaction.TransactionManager;
 
 /**
  * Transaction manager implementation. Very limited, but works in the case of
- * resource local transactions or JTA over multiple database connections (sort of).
+ * resource local transactions or JTA over multiple databases using a XA connection (sort of).
  */
 class TransactionManagerImpl implements TransactionManager {
 	private long defaultTimeout;
@@ -43,8 +44,12 @@ class TransactionManagerImpl implements TransactionManager {
 	}
 	
 	@Override
-	public void begin() {
-		TransactionImpl impl = _getTransaction(true);
+	public void begin() throws NotSupportedException {
+		TransactionImpl impl = _getTransaction(false);
+		if (impl != null && impl.getStatus() != Status.STATUS_NO_TRANSACTION) {
+			throw new NotSupportedException("cannot start a new transaction when one is busy");
+		}
+		impl = _getTransaction(true);
 		impl.setStatus(Status.STATUS_ACTIVE);
 	}
 
@@ -83,7 +88,7 @@ class TransactionManagerImpl implements TransactionManager {
 
 	@Override
 	public void resume(Transaction trans) throws SystemException {
-		throw new SystemException("no transaction resuming is possible with this transaction manager");
+		throw new SystemException("no transaction suspending/resuming is possible with this transaction manager");
 	}
 
 	@Override

@@ -20,9 +20,12 @@ import java.util.Collection;
 
 /**
  * Provider of bundle resources. Provides the opportunity to load resources from a bundle
- * for faces handling, although not really limited to this.
+ * for faces handling, although not really limited to this. In this resource loading, resources
+ * are grouped into logical directories which may map to any directory or location in a bundle.
+ * Bundle resource loading can be enabled in a bundle by specifying the Bundle-Resources header.
  */
 public interface BundleResourceProvider {
+	/** The default logical directory */
 	public static String DEFAULT = null;
 	/**
 	 * Provide the resources that are found at the specified logical directory. It is actually a wildcard search

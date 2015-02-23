@@ -27,7 +27,8 @@ import osgi.extender.resource.BundleResource;
 import osgi.extender.resource.BundleResourceProvider;
 
 /**
- * Implementation of a resource provider.
+ * Implementation of a resource provider for bundles. Just keeps a mapping of
+ * logical directories to prefixes in the bundle.
  */
 class OurBundleResourceProvider implements BundleResourceProvider {
 	private Bundle bundle;
