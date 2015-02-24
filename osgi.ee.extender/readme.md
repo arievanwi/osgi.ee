@@ -11,9 +11,10 @@ The extender here is meant as a one-stop solution for the following JEE7 standar
 extender is needed with some additional functionality for finding Faces configuration files and tag libraries. This is functionality
 provided by [PAX-WEB][4].
 
-Documentation about the usage of this extender will be delivered soon and referenced here.
+Documentation about the usage of this extender can be found [here][5].
 
 [1]: http://www.osgi.org/Specifications/HomePage
 [2]: http://weld.cdi-spec.org/
 [3]: http://search.maven.org/#artifactdetails|org.jboss.weld|weld-osgi-bundle|2.2.9.Final|jar
 [4]: https://ops4j1.jira.com/wiki/display/paxweb/Pax+Web
+[5]: http://www.avineas.org/uploads/jee-extender.pdf
