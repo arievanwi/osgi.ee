@@ -22,10 +22,11 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.transaction.TransactionManager;
 import javax.transaction.Status;
+import javax.transaction.TransactionManager;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
@@ -67,6 +68,10 @@ public class TransactionFilter implements Filter {
 	@Override
 	public void init(FilterConfig config) {
 		BundleContext context = (BundleContext) config.getServletContext().getAttribute("osgi-bundlecontext");
+		if (context == null) {
+			// Fall back in case we don't use a chapter 128 web extender.
+			context = FrameworkUtil.getBundle(getClass()).getBundleContext();
+		}
 		tracker = new ServiceTracker<>(context, TransactionManager.class, null);
 		tracker.open();
 	}

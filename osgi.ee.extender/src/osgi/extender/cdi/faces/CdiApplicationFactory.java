@@ -37,7 +37,7 @@ public class CdiApplicationFactory extends ApplicationFactory {
     @Override
     public synchronized Application getApplication() {
         if (application == null) {
-            application = new CdiApplication(delegate.getApplication(), false);
+            application = new CdiApplication(delegate.getApplication());
         }
         return application;
     }

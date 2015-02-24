@@ -16,12 +16,14 @@
  */
 package osgi.extender.cdi.weld;
 
+import java.util.Hashtable;
 import java.util.List;
 
 import javax.enterprise.inject.spi.BeanManager;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
@@ -53,8 +55,14 @@ public class CdiBundleChangeListener implements BundleTrackerCustomizer<Object> 
         	requirements.stream().anyMatch((w) -> w.getProviderWiring().getBundle().equals(me))) {
         	// Create the stuff.
             WeldContainer container = new WeldContainer(bundle);
+            Hashtable<String, Object> dict = new Hashtable<>();
+            dict.put(Constants.BUNDLE_SYMBOLICNAME, bundle.getSymbolicName());
+            String cat = bundle.getHeaders().get(Constants.BUNDLE_CATEGORY);
+            if (cat != null) {
+            	dict.put(Constants.BUNDLE_CATEGORY, cat);
+            }
             ServiceRegistration<BeanManager> reg = bundle.getBundleContext().registerService(BeanManager.class, 
-                container.getManager(), null);
+                container.getManager(), dict);
             context = new Context(container, reg);
         }
         return context;

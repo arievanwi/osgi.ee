@@ -24,6 +24,7 @@ import java.util.Map;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
+import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTrackerCustomizer;
 
@@ -84,6 +85,10 @@ public class ResourceHandlingBundleListener implements BundleTrackerCustomizer<O
 			});
 		OurBundleResourceProvider provider = new OurBundleResourceProvider(bundle, mapping);
 		BundleContext context = bundle.getBundleContext();
+		dict.put(Constants.BUNDLE_SYMBOLICNAME, context.getBundle().getSymbolicName());
+		String cat = context.getBundle().getHeaders().get(Constants.BUNDLE_CATEGORY);
+		if (cat != null)
+			dict.put(Constants.BUNDLE_CATEGORY, cat);
 		ServiceRegistration<BundleResourceProvider> sr = context.registerService(BundleResourceProvider.class, provider, dict);
 		return sr;
 	}

@@ -1,0 +1,21 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+<html>
+<head/>
+<body>
+Factory components that can be used to create either transaction managed or normal data sources by means of a factory 
+configuration in CM. To automatically construct a data source:
+<ul>
+<li>Create a configuration with service.factoryPid set to "datasource" (for normal data sources) or "XAdatasource" for
+transaction managed data source</li>
+<li>Set the properties for this data source via normal settings. The properties should be looked up in the source, but
+for clarity some are given:
+<ul>
+<li><code>jdbc.url, jdbc.driver, jdbc.user, jdbc.password</code>. The various settings for the JDBC connection.</li>
+<li><code>pool.idle.min, pool.idle.max, pool.active.max, pool.wait</code>. The pool parameters.</li>
+<li><code>validation.query, validation.timeout</code>. The validation query and query time-out</li>
+</ul>
+</li>
+</ul>
+Requires an OSGi SCR.
+</body>
+</html>

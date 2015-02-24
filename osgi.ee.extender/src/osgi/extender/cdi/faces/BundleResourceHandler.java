@@ -33,6 +33,7 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Constants;
 import org.osgi.util.tracker.ServiceTracker;
 
 import osgi.extender.resource.BundleResource;
@@ -57,11 +58,16 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
 	 * 
 	 * @param context The context, used for finding services
 	 * @param wrapped The wrapped resource handler
+	 * @param filt The filter specification, may be null
 	 */
-	BundleResourceHandler(BundleContext context, ResourceHandler wrapped) {
+	BundleResourceHandler(BundleContext context, ResourceHandler wrapped, String filt) throws Exception {
 		this.delegate = wrapped;
+		String filter = "(" + Constants.OBJECTCLASS + "=" + BundleResourceProvider.class.getName() + ")";
+		if (filt != null) {
+			filter = "(&" + filter + filt + ")";
+		}
 		tracker = new ServiceTracker<BundleResourceProvider, BundleResourceProvider>(context, 
-				BundleResourceProvider.class, null);
+				context.createFilter(filter), null); 
 		tracker.open();
 	}
 	

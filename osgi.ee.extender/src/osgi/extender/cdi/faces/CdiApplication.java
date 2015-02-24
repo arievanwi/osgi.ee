@@ -46,19 +46,14 @@ import org.osgi.util.tracker.ServiceTracker;
 class CdiApplication extends ApplicationWrapper {
     private Application delegate;
     private ServiceTracker<BeanManager, BeanManager> beanManagerTracker;
-    private ServiceTracker<ResourceHandler, ResourceHandler> resourceHandlerTracker;
-    private boolean thisBundleOnly;
     
     /**
      * Create a new wrapped application for this instance.
      * 
      * @param delegate The wrapped application object
-     * @param thisBundleOnly Indication whether we should delegate only to the bean manager of
-     * the current bundle. If false, delegation is done to all bean managers registered (discouraged).
      */
-    CdiApplication(Application delegate, boolean thisBundleOnly) {
+    CdiApplication(Application delegate) {
         this.delegate = delegate;
-        this.thisBundleOnly = thisBundleOnly;
         delegate.addELContextListener(new WeldELContextListener());
     }
     
@@ -73,6 +68,15 @@ class CdiApplication extends ApplicationWrapper {
         final BundleContext bundleContext = (BundleContext) servletContext.getAttribute("osgi-bundlecontext");
         return bundleContext;
     }
+
+    /**
+     * Get the filter specification as present in the init parameter.
+     * 
+     * @return The filter specification. May be null
+     */
+    private static String getFilter() {
+    	return FacesContext.getCurrentInstance().getExternalContext().getInitParameter("osgi.extender.cdi.faces.filter");
+    }
     
     /**
      * Perform a check on the set-up. Since during construction of this application we don't know anything about
@@ -83,22 +87,15 @@ class CdiApplication extends ApplicationWrapper {
         if (beanManagerTracker == null) {
             final BundleContext bundleContext = context();
             if (bundleContext != null) {
-            	String bundleId;
-            	if (thisBundleOnly) {
-            		bundleId = Long.toString(bundleContext.getBundle().getBundleId());
+            	String filterSpec = getFilter();
+            	String filter = "(" + Constants.OBJECTCLASS + "=" + BeanManager.class.getName() + ")";
+            	if (filterSpec != null) {
+            		filter = "(&" + filter + filterSpec + ")";
             	}
-            	else {
-            		bundleId = "*";
-            	}
-                String filter = "(&(" + Constants.OBJECTCLASS + "=" + BeanManager.class.getName() + ")(" +
-                		Constants.SERVICE_BUNDLEID + "=" + bundleId + "))";
                 try {
 	            	beanManagerTracker = new ServiceTracker<BeanManager, BeanManager>(bundleContext, 
 	            			FrameworkUtil.createFilter(filter), null);
 	            	beanManagerTracker.open();
-	            	resourceHandlerTracker = new ServiceTracker<ResourceHandler, ResourceHandler>(bundleContext,
-	            			ResourceHandler.class, null);
-	            	resourceHandlerTracker.open();
                 } catch (Exception exc) {
                 	exc.printStackTrace();
                 }
@@ -145,7 +142,12 @@ class CdiApplication extends ApplicationWrapper {
 
     @Override
     public ResourceHandler getResourceHandler() {
-    	return new BundleResourceHandler(context(), delegate.getResourceHandler());
+    	try {
+    		return new BundleResourceHandler(context(), delegate.getResourceHandler(), getFilter());
+    	} catch (Exception exc) {
+    		exc.printStackTrace();
+    		return delegate.getResourceHandler();
+    	}
     }
 
     @Override

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" immediate="true" name="datasource.TransactionalDataSourceProvider">
+   <implementation class="datasource.TransactionalDataSourceProvider"/>
+   <service>
+      <provide interface="org.osgi.service.cm.ManagedServiceFactory"/>
+   </service>
+   <property name="service.pid" value="XAdatasource"/>
+   <reference bind="setTransactionManager" cardinality="1..1" interface="javax.transaction.TransactionManager" name="TransactionManager" policy="static"/>
+</scr:component>
