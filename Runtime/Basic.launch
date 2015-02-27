@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<launchConfiguration type="org.eclipse.pde.ui.EquinoxLauncher">
+<booleanAttribute key="append.args" value="true"/>
+<booleanAttribute key="automaticAdd" value="true"/>
+<booleanAttribute key="automaticValidate" value="false"/>
+<stringAttribute key="bootstrap" value=""/>
+<stringAttribute key="checked" value="[NONE]"/>
+<booleanAttribute key="clearConfig" value="false"/>
+<stringAttribute key="configLocation" value="${workspace_loc}/.metadata/.plugins/org.eclipse.pde.core/Basic"/>
+<booleanAttribute key="default" value="true"/>
+<booleanAttribute key="default_auto_start" value="true"/>
+<intAttribute key="default_start_level" value="4"/>
+<booleanAttribute key="includeOptional" value="true"/>
+<stringAttribute key="karaf_boot_features" value=""/>
+<booleanAttribute key="karaf_features_management" value="true"/>
+<stringAttribute key="karaf_remote_console_password" value="karaf"/>
+<stringAttribute key="karaf_remote_console_username" value="karaf"/>
+<booleanAttribute key="karaf_start_local_console" value="true"/>
+<booleanAttribute key="karaf_start_remote_console" value="false"/>
+<booleanAttribute key="org.eclipse.jdt.launching.ATTR_USE_START_ON_FIRST_THREAD" value="true"/>
+<stringAttribute key="org.eclipse.jdt.launching.JRE_CONTAINER" value="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="-os ${target.os} -ws ${target.ws} -arch ${target.arch} -nl ${target.nl} -consoleLog -console"/>
+<stringAttribute key="org.eclipse.jdt.launching.SOURCE_PATH_PROVIDER" value="org.eclipse.pde.ui.workbenchClasspathProvider"/>
+<stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Declipse.ignoreApp=true -Dosgi.noShutdown=true -Dcm.location=configuration  -Dorg.jboss.logging.provider=slf4j"/>
+<stringAttribute key="pde.version" value="3.3"/>
+<booleanAttribute key="show_selected_only" value="false"/>
+<stringAttribute key="target_bundles" value="com.google.guava@default:default,com.sun.el.javax.el@default:default,javax.annotation-api@default:default,javax.enterprise.cdi-api@default:default,javax.interceptor-api@default:default,javax.persistence@default:default,javax.servlet-api@default:default,javax.servlet.jsp-api@default:default,javax.servlet.jsp.jstl-api@default:default,org.apache.felix.configadmin@default:default,org.apache.felix.gogo.command@default:default,org.apache.felix.gogo.runtime@default:default,org.apache.felix.gogo.shell@default:default,org.apache.felix.scr@default:default,org.apache.geronimo.specs.geronimo-jta_1.1_spec@default:default,org.apache.xbean.bundleutils@default:default,org.apache.xbean.finder@default:default,org.avineas.cm.persister@default:default,org.avineas.log4j@default:default,org.eclipse.equinox.console@default:default,org.eclipse.osgi@-1:true,org.eclipse.persistence.antlr@default:default,org.eclipse.persistence.asm@default:default,org.eclipse.persistence.core@default:default,org.eclipse.persistence.jpa.jpql@default:default,org.eclipse.persistence.jpa@default:default,org.glassfish.hk2.external.bean-validator@default:default,org.glassfish.hk2.external.javax.inject@default:default,org.glassfish.javax.ejb@default:default,org.glassfish.javax.faces@default:default,org.jboss.logging.jboss-logging@default:default,org.jboss.weld.osgi-bundle@default:default,org.objectweb.asm.all@default:default,org.ops4j.pax.web.pax-web-extender-war@default:default,org.ops4j.pax.web.pax-web-jetty-bundle@default:default,org.primefaces@default:default,osgi.enterprise@default:default,slf4j.api@default:default,slf4j.log4j12@default:false"/>
+<booleanAttribute key="tracing" value="false"/>
+<booleanAttribute key="useCustomFeatures" value="false"/>
+<booleanAttribute key="useDefaultConfigArea" value="true"/>
+<stringAttribute key="workspace_bundles" value="datasource.factory@default:default,eclipselink.extender@default:default,osgi.ee.extender@default:default,slf4j-jul-bridge@default:default"/>
+</launchConfiguration>
