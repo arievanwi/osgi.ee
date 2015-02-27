@@ -75,7 +75,7 @@ class CdiApplication extends ApplicationWrapper {
      * @return The filter specification. May be null
      */
     private static String getFilter() {
-    	return FacesContext.getCurrentInstance().getExternalContext().getInitParameter("osgi.extender.cdi.faces.filter");
+        return FacesContext.getCurrentInstance().getExternalContext().getInitParameter("osgi.extender.cdi.faces.filter");
     }
     
     /**
@@ -87,17 +87,17 @@ class CdiApplication extends ApplicationWrapper {
         if (beanManagerTracker == null) {
             final BundleContext bundleContext = context();
             if (bundleContext != null) {
-            	String filterSpec = getFilter();
-            	String filter = "(" + Constants.OBJECTCLASS + "=" + BeanManager.class.getName() + ")";
-            	if (filterSpec != null) {
-            		filter = "(&" + filter + filterSpec + ")";
-            	}
+                String filterSpec = getFilter();
+                String filter = "(" + Constants.OBJECTCLASS + "=" + BeanManager.class.getName() + ")";
+                if (filterSpec != null) {
+                    filter = "(&" + filter + filterSpec + ")";
+                }
                 try {
-	            	beanManagerTracker = new ServiceTracker<BeanManager, BeanManager>(bundleContext, 
-	            			FrameworkUtil.createFilter(filter), null);
-	            	beanManagerTracker.open();
+                    beanManagerTracker = new ServiceTracker<BeanManager, BeanManager>(bundleContext, 
+                            FrameworkUtil.createFilter(filter), null);
+                    beanManagerTracker.open();
                 } catch (Exception exc) {
-                	exc.printStackTrace();
+                    exc.printStackTrace();
                 }
             }
         }
@@ -109,10 +109,10 @@ class CdiApplication extends ApplicationWrapper {
      * @param consumer The consumer to execute for each manager tracked
      */
     private void doWithBeanManagers(Consumer<BeanManager> consumer) {
-    	List<BeanManager> managers = new ArrayList<BeanManager>();
-    	check();
+        List<BeanManager> managers = new ArrayList<BeanManager>();
+        check();
         if (beanManagerTracker != null) {
-        	managers.addAll(beanManagerTracker.getTracked().values());
+            managers.addAll(beanManagerTracker.getTracked().values());
         }
         managers.stream().forEach(consumer);
     }
@@ -142,12 +142,12 @@ class CdiApplication extends ApplicationWrapper {
 
     @Override
     public ResourceHandler getResourceHandler() {
-    	try {
-    		return new BundleResourceHandler(context(), delegate.getResourceHandler(), getFilter());
-    	} catch (Exception exc) {
-    		exc.printStackTrace();
-    		return delegate.getResourceHandler();
-    	}
+        try {
+            return new BundleResourceHandler(context(), delegate.getResourceHandler(), getFilter());
+        } catch (Exception exc) {
+            exc.printStackTrace();
+            return delegate.getResourceHandler();
+        }
     }
 
     @Override

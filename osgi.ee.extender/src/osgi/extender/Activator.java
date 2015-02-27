@@ -38,20 +38,20 @@ import osgi.extender.services.ServicesCheckingBundleListener;
  * @author Arie van Wijngaarden
  */
 public class Activator implements BundleActivator {
-	private Collection<BundleTracker<Object>> trackers;
+    private Collection<BundleTracker<Object>> trackers;
     
     @Override
     public void start(BundleContext context) throws Exception {
-    	Collection<BundleTrackerCustomizer<Object>> listeners = Arrays.asList(new ResourceHandlingBundleListener(),
-    			new CdiBundleChangeListener(context.getBundle()),
-    			new ServicesCheckingBundleListener(),
-    			new JpaBundleChangeListener(context.getBundle()));
-    	trackers = listeners.stream().map((l) -> new BundleTracker<Object>(context, Bundle.ACTIVE, l)).collect(Collectors.toList());
-    	trackers.stream().forEach((t) -> t.open());
+        Collection<BundleTrackerCustomizer<Object>> listeners = Arrays.asList(new ResourceHandlingBundleListener(),
+                new CdiBundleChangeListener(context.getBundle()),
+                new ServicesCheckingBundleListener(),
+                new JpaBundleChangeListener(context.getBundle()));
+        trackers = listeners.stream().map((l) -> new BundleTracker<Object>(context, Bundle.ACTIVE, l)).collect(Collectors.toList());
+        trackers.stream().forEach((t) -> t.open());
     }
 
     @Override
     public void stop(BundleContext context) throws Exception {
-    	trackers.stream().forEach((t) -> t.close());
+        trackers.stream().forEach((t) -> t.close());
     }
 }

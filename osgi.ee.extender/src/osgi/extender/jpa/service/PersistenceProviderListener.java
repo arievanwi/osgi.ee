@@ -32,63 +32,63 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  * the changes to a listener. It provides an interface for retrieving a provider by name.
  */
 public class PersistenceProviderListener implements 
-		ServiceTrackerCustomizer<PersistenceProvider, PersistenceProvider>, PPProvider {
-	private Map<String, PersistenceProvider> tracked = new HashMap<>();
-	private BundleContext bundleContext;
-	private PPListener listener;
-	
-	public PersistenceProviderListener(BundleContext context, PPListener listener) {
-		this.bundleContext = context;
-		this.listener = listener;
-	}
+        ServiceTrackerCustomizer<PersistenceProvider, PersistenceProvider>, PPProvider {
+    private Map<String, PersistenceProvider> tracked = new HashMap<>();
+    private BundleContext bundleContext;
+    private PPListener listener;
+    
+    public PersistenceProviderListener(BundleContext context, PPListener listener) {
+        this.bundleContext = context;
+        this.listener = listener;
+    }
 
-	private static String getName(ServiceReference<?> ref) {
-		String providerName = (String) ref.getProperty(EntityManagerFactoryBuilder.JPA_UNIT_PROVIDER);
-		return providerName;
-	}
-	
-	@Override
-	public PersistenceProvider addingService(ServiceReference<PersistenceProvider> ref) {
-		String providerName = getName(ref);
-		if (providerName == null) return null;
-		PersistenceProvider provider = bundleContext.getService(ref);
-		if (provider != null) {
-			synchronized (tracked) {
-				tracked.put(providerName, provider);
-			}
-			listener.added(providerName, provider);
-		}
-		return provider;
-	}
+    private static String getName(ServiceReference<?> ref) {
+        String providerName = (String) ref.getProperty(EntityManagerFactoryBuilder.JPA_UNIT_PROVIDER);
+        return providerName;
+    }
+    
+    @Override
+    public PersistenceProvider addingService(ServiceReference<PersistenceProvider> ref) {
+        String providerName = getName(ref);
+        if (providerName == null) return null;
+        PersistenceProvider provider = bundleContext.getService(ref);
+        if (provider != null) {
+            synchronized (tracked) {
+                tracked.put(providerName, provider);
+            }
+            listener.added(providerName, provider);
+        }
+        return provider;
+    }
 
-	@Override
-	public void modifiedService(ServiceReference<PersistenceProvider> ref,
-			PersistenceProvider provider) {
-	}
-	
-	@Override
-	public void removedService(ServiceReference<PersistenceProvider> ref, PersistenceProvider provider) {
-		String name = getName(ref);
-		PersistenceProvider prov;
-		synchronized (tracked) {
-			prov = tracked.remove(name);
-		}
-		if (prov != null) {
-			bundleContext.ungetService(ref);
-			listener.removed(name);
-		}
-	}
+    @Override
+    public void modifiedService(ServiceReference<PersistenceProvider> ref,
+            PersistenceProvider provider) {
+    }
+    
+    @Override
+    public void removedService(ServiceReference<PersistenceProvider> ref, PersistenceProvider provider) {
+        String name = getName(ref);
+        PersistenceProvider prov;
+        synchronized (tracked) {
+            prov = tracked.remove(name);
+        }
+        if (prov != null) {
+            bundleContext.ungetService(ref);
+            listener.removed(name);
+        }
+    }
 
-	@Override
-	public Map.Entry<String, PersistenceProvider> get(String name) {
-		PersistenceProvider provider = tracked.get(name);
-		Map.Entry<String, PersistenceProvider> entry = null;
-		if (provider != null) {
-			entry = new AbstractMap.SimpleEntry<String, PersistenceProvider>(name, provider);
-		}
-		else if (name == null || name.trim().length() == 0 && tracked.size() > 0) {
-			entry = tracked.entrySet().iterator().next();
-		}
-		return entry;
-	}
+    @Override
+    public Map.Entry<String, PersistenceProvider> get(String name) {
+        PersistenceProvider provider = tracked.get(name);
+        Map.Entry<String, PersistenceProvider> entry = null;
+        if (provider != null) {
+            entry = new AbstractMap.SimpleEntry<String, PersistenceProvider>(name, provider);
+        }
+        else if (name == null || name.trim().length() == 0 && tracked.size() > 0) {
+            entry = tracked.entrySet().iterator().next();
+        }
+        return entry;
+    }
 }

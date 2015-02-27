@@ -24,42 +24,42 @@ import java.util.Enumeration;
  * Class loader that delegates to other class loaders in order of appearance.
  */
 public class CompoundClassLoader extends ClassLoader {
-	private ClassLoader delegate;
-	
-	private CompoundClassLoader(ClassLoader parent, ClassLoader delegate) {
-		super(parent);
-		this.delegate = delegate;
-	}
-	
-	@Override
-	protected Class<?> findClass(String name) throws ClassNotFoundException {
-		return delegate.loadClass(name);
-	}
+    private ClassLoader delegate;
+    
+    private CompoundClassLoader(ClassLoader parent, ClassLoader delegate) {
+        super(parent);
+        this.delegate = delegate;
+    }
+    
+    @Override
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        return delegate.loadClass(name);
+    }
 
-	@Override
-	protected URL findResource(String name) {
-		return delegate.getResource(name);
-	}
+    @Override
+    protected URL findResource(String name) {
+        return delegate.getResource(name);
+    }
 
-	@Override
-	protected Enumeration<URL> findResources(String name) throws IOException {
-		return delegate.getResources(name);
-	}
-	
-	/**
-	 * Get a compound class loader from a set of other loaders. The number of loaders
-	 * is unimportant.
-	 * 
-	 * @param classLoaders The class loaders to delegate to
-	 * @return A class loader that is the combination of them all
-	 */
-	public static ClassLoader from(ClassLoader... classLoaders) {
-		if (classLoaders.length == 0) return null;
-		if (classLoaders.length == 1) return classLoaders[0];
-		CompoundClassLoader loader = new CompoundClassLoader(classLoaders[0], classLoaders[1]);
-		for (int cnt = 2; cnt < classLoaders.length; cnt++) {
-			loader = new CompoundClassLoader(loader, classLoaders[cnt]);
-		}
-		return loader;
-	}
+    @Override
+    protected Enumeration<URL> findResources(String name) throws IOException {
+        return delegate.getResources(name);
+    }
+    
+    /**
+     * Get a compound class loader from a set of other loaders. The number of loaders
+     * is unimportant.
+     * 
+     * @param classLoaders The class loaders to delegate to
+     * @return A class loader that is the combination of them all
+     */
+    public static ClassLoader from(ClassLoader... classLoaders) {
+        if (classLoaders.length == 0) return null;
+        if (classLoaders.length == 1) return classLoaders[0];
+        CompoundClassLoader loader = new CompoundClassLoader(classLoaders[0], classLoaders[1]);
+        for (int cnt = 2; cnt < classLoaders.length; cnt++) {
+            loader = new CompoundClassLoader(loader, classLoaders[cnt]);
+        }
+        return loader;
+    }
 }

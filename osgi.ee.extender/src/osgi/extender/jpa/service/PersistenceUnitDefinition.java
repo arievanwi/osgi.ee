@@ -34,53 +34,53 @@ import com.thoughtworks.xstream.io.xml.DomDriver;
  * use some transformation to get the data from a standard persistence.xml.
  */
 class PersistenceUnitDefinition {
-	String version;
-	String name;
-	String transactionType;
-	String description;
-	String provider;
-	String nonJtaDs;
-	String jtaDs;
-	List<String> mappingFiles;
-	List<String> jarFiles;
-	List<String> classes;
-	boolean excludeUnlisted = true;
-	String cachingType;
-	String validationMode;
-	Map<String, String> properties;
+    String version;
+    String name;
+    String transactionType;
+    String description;
+    String provider;
+    String nonJtaDs;
+    String jtaDs;
+    List<String> mappingFiles;
+    List<String> jarFiles;
+    List<String> classes;
+    boolean excludeUnlisted = true;
+    String cachingType;
+    String validationMode;
+    Map<String, String> properties;
 
-	static List<PersistenceUnitDefinition> fromFile(InputStream in) throws Exception {
-		// Get the xsl file.
-		String xsl = "/" + PersistenceUnitDefinition.class.getPackage().getName().replace(".", "/") + "/persistence.xsl";
-		// Open it and use it for transformation.
-		try (InputStream xsls = PersistenceUnitDefinition.class.getClassLoader().getResourceAsStream(xsl)) {
-			// Create a new transformer from it.
-			Transformer trans = TransformerFactory.newInstance().newTransformer(new StreamSource(xsls));
-			// Prepare to get the result.
-			StringWriter writer = new StringWriter();
-			StreamResult result = new StreamResult(writer);
-			// Do the transformation.
-			trans.transform(new StreamSource(in), result);
-			// And de-serialize it.
-			XStream stream = new XStream(new DomDriver());
-			@SuppressWarnings("unchecked")
-			List<PersistenceUnitDefinition> list = (List<PersistenceUnitDefinition>) stream.fromXML(writer.getBuffer().toString());
-			return list;
-		} 
-	}
+    static List<PersistenceUnitDefinition> fromFile(InputStream in) throws Exception {
+        // Get the xsl file.
+        String xsl = "/" + PersistenceUnitDefinition.class.getPackage().getName().replace(".", "/") + "/persistence.xsl";
+        // Open it and use it for transformation.
+        try (InputStream xsls = PersistenceUnitDefinition.class.getClassLoader().getResourceAsStream(xsl)) {
+            // Create a new transformer from it.
+            Transformer trans = TransformerFactory.newInstance().newTransformer(new StreamSource(xsls));
+            // Prepare to get the result.
+            StringWriter writer = new StringWriter();
+            StreamResult result = new StreamResult(writer);
+            // Do the transformation.
+            trans.transform(new StreamSource(in), result);
+            // And de-serialize it.
+            XStream stream = new XStream(new DomDriver());
+            @SuppressWarnings("unchecked")
+            List<PersistenceUnitDefinition> list = (List<PersistenceUnitDefinition>) stream.fromXML(writer.getBuffer().toString());
+            return list;
+        } 
+    }
 
-	@Override
-	public int hashCode() {
-		return name.hashCode();
-	}
+    @Override
+    public int hashCode() {
+        return name.hashCode();
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		try {
-			PersistenceUnitDefinition def = (PersistenceUnitDefinition) obj;
-			return def.name.equals(this.name);
-		} catch (Exception exc) {
-			return false;
-		}
-	}
+    @Override
+    public boolean equals(Object obj) {
+        try {
+            PersistenceUnitDefinition def = (PersistenceUnitDefinition) obj;
+            return def.name.equals(this.name);
+        } catch (Exception exc) {
+            return false;
+        }
+    }
 }

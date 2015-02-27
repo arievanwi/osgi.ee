@@ -35,63 +35,63 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
  */
 public class ServicesCheckingBundleListener implements BundleTrackerCustomizer<Object> {
 
-	private static ServiceRegistration<?> create(String interfaceName, String line, Bundle bundle) {
-		ClassLoader loader = bundle.adapt(BundleWiring.class).getClassLoader();
-		String[] words = line.split("\\s+");
-		Hashtable<String, Object> properties = new Hashtable<>();
-		String className = words[0];
-		for (int cnt = 1; cnt < words.length; cnt++) {
-			String[] p = words[cnt].split("\\s*=\\s*");
-			if (p.length == 2) {
-				properties.put(p[0], p[1]);
-			}
-		}
-		try {
-			Object obj = loader.loadClass(className).newInstance(); 
-			ServiceRegistration<?> sr = bundle.getBundleContext().registerService(interfaceName, obj, properties);
-			return sr;
-		} catch (Exception exc) {
-			exc.printStackTrace();
-			return null;
-		}
-	}
-	
-	@Override
-	public Object addingBundle(Bundle bundle, BundleEvent event) {
-		// Check the bundle for services.
-		final String SERVICESPATH = "/OSGI-INF/services";
-		Enumeration<URL> en = bundle.findEntries(SERVICESPATH, "*", false);
-		if (en == null) return null;
-		List<ServiceRegistration<?>> references = new ArrayList<>();
-		while (en.hasMoreElements()) {
-			URL url = en.nextElement();
-			String interfaceName = url.toString().substring(url.toString().lastIndexOf("/") + 1);
-			try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
-				reader.lines().
-					map((line) -> create(interfaceName, line, bundle)).
-					filter((sr) -> sr != null).
-					forEach((sr) -> references.add(sr));
-			} catch (Exception exc) {
-				exc.printStackTrace();
-			}
-		}
-		return references;
-	}
+    private static ServiceRegistration<?> create(String interfaceName, String line, Bundle bundle) {
+        ClassLoader loader = bundle.adapt(BundleWiring.class).getClassLoader();
+        String[] words = line.split("\\s+");
+        Hashtable<String, Object> properties = new Hashtable<>();
+        String className = words[0];
+        for (int cnt = 1; cnt < words.length; cnt++) {
+            String[] p = words[cnt].split("\\s*=\\s*");
+            if (p.length == 2) {
+                properties.put(p[0], p[1]);
+            }
+        }
+        try {
+            Object obj = loader.loadClass(className).newInstance(); 
+            ServiceRegistration<?> sr = bundle.getBundleContext().registerService(interfaceName, obj, properties);
+            return sr;
+        } catch (Exception exc) {
+            exc.printStackTrace();
+            return null;
+        }
+    }
+    
+    @Override
+    public Object addingBundle(Bundle bundle, BundleEvent event) {
+        // Check the bundle for services.
+        final String SERVICESPATH = "/OSGI-INF/services";
+        Enumeration<URL> en = bundle.findEntries(SERVICESPATH, "*", false);
+        if (en == null) return null;
+        List<ServiceRegistration<?>> references = new ArrayList<>();
+        while (en.hasMoreElements()) {
+            URL url = en.nextElement();
+            String interfaceName = url.toString().substring(url.toString().lastIndexOf("/") + 1);
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()))) {
+                reader.lines().
+                    map((line) -> create(interfaceName, line, bundle)).
+                    filter((sr) -> sr != null).
+                    forEach((sr) -> references.add(sr));
+            } catch (Exception exc) {
+                exc.printStackTrace();
+            }
+        }
+        return references;
+    }
 
-	@Override
-	public void modifiedBundle(Bundle bundle, BundleEvent event, Object object) {
-	}
+    @Override
+    public void modifiedBundle(Bundle bundle, BundleEvent event, Object object) {
+    }
 
-	@Override
-	public void removedBundle(Bundle bundle, BundleEvent event, Object object) {
-		@SuppressWarnings("unchecked")
-		List<ServiceRegistration<?>> regs = (List<ServiceRegistration<?>>) object;
-		if (regs != null) {
-			regs.stream().forEach((r) -> {
-				try {
-					r.unregister();
-				} catch (Exception exc) {}
-			});
-		}
-	}
+    @Override
+    public void removedBundle(Bundle bundle, BundleEvent event, Object object) {
+        @SuppressWarnings("unchecked")
+        List<ServiceRegistration<?>> regs = (List<ServiceRegistration<?>>) object;
+        if (regs != null) {
+            regs.stream().forEach((r) -> {
+                try {
+                    r.unregister();
+                } catch (Exception exc) {}
+            });
+        }
+    }
 }

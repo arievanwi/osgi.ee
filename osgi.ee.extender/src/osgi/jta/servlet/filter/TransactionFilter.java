@@ -35,49 +35,49 @@ import org.osgi.util.tracker.ServiceTracker;
  * filter just continues without transaction management.
  */
 public class TransactionFilter implements Filter {
-	private ServiceTracker<TransactionManager, TransactionManager> tracker;
-	
-	@Override
-	public void doFilter(ServletRequest request, ServletResponse response,
-			FilterChain chain) throws ServletException {
-		TransactionManager manager = tracker.getService();
-		try {
-			if (manager != null)
-				manager.begin();
-			chain.doFilter(request, response);
-			if (manager != null) {
-				if (manager.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
-					manager.rollback();
-				}
-				else {
-					manager.commit();
-				}
-			}
-		} catch (Exception ex) {
-			ex.printStackTrace();
-			try {
-				if (manager != null)
-					manager.rollback();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			throw new ServletException(ex);
-		}
-	}
+    private ServiceTracker<TransactionManager, TransactionManager> tracker;
+    
+    @Override
+    public void doFilter(ServletRequest request, ServletResponse response,
+            FilterChain chain) throws ServletException {
+        TransactionManager manager = tracker.getService();
+        try {
+            if (manager != null)
+                manager.begin();
+            chain.doFilter(request, response);
+            if (manager != null) {
+                if (manager.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
+                    manager.rollback();
+                }
+                else {
+                    manager.commit();
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            try {
+                if (manager != null)
+                    manager.rollback();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            throw new ServletException(ex);
+        }
+    }
 
-	@Override
-	public void init(FilterConfig config) {
-		BundleContext context = (BundleContext) config.getServletContext().getAttribute("osgi-bundlecontext");
-		if (context == null) {
-			// Fall back in case we don't use a chapter 128 web extender.
-			context = FrameworkUtil.getBundle(getClass()).getBundleContext();
-		}
-		tracker = new ServiceTracker<>(context, TransactionManager.class, null);
-		tracker.open();
-	}
-	
-	@Override
-	public void destroy() {
-		tracker.close();
-	}
+    @Override
+    public void init(FilterConfig config) {
+        BundleContext context = (BundleContext) config.getServletContext().getAttribute("osgi-bundlecontext");
+        if (context == null) {
+            // Fall back in case we don't use a chapter 128 web extender.
+            context = FrameworkUtil.getBundle(getClass()).getBundleContext();
+        }
+        tracker = new ServiceTracker<>(context, TransactionManager.class, null);
+        tracker.open();
+    }
+    
+    @Override
+    public void destroy() {
+        tracker.close();
+    }
 }

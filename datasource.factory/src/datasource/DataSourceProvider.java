@@ -26,13 +26,13 @@ import org.osgi.service.component.annotations.Component;
 @Component(immediate = true, property = {"service.pid=datasource"})
 public class DataSourceProvider extends BasicDataSourceProvider<BasicDataSource> implements ManagedServiceFactory {
 
-	@Override
-	public String getName() {
-		return "datasource";
-	}
+    @Override
+    public String getName() {
+        return "datasource";
+    }
 
-	@Override
-	BasicDataSource getDataSource() {
-		return new BasicDataSource();
-	}
+    @Override
+    BasicDataSource getDataSource() {
+        return new BasicDataSource();
+    }
 }

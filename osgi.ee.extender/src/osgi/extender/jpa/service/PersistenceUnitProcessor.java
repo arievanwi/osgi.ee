@@ -33,23 +33,23 @@ import org.osgi.framework.Bundle;
  * entity manager factory.
  */
 class PersistenceUnitProcessor {
-	static List<PersistenceUnitDefinition> getDefinitions(Bundle wrapping, String name) {
-		URL url = wrapping.getEntry(name);
-		List<PersistenceUnitDefinition> out = new ArrayList<>();
-		if (url == null) return out;
-		try (InputStream stream = url.openStream()) {
-			return PersistenceUnitDefinition.fromFile(stream);
-		} catch (Exception exc) {
-			throw new RuntimeException(exc);
-		}
-	}
+    static List<PersistenceUnitDefinition> getDefinitions(Bundle wrapping, String name) {
+        URL url = wrapping.getEntry(name);
+        List<PersistenceUnitDefinition> out = new ArrayList<>();
+        if (url == null) return out;
+        try (InputStream stream = url.openStream()) {
+            return PersistenceUnitDefinition.fromFile(stream);
+        } catch (Exception exc) {
+            throw new RuntimeException(exc);
+        }
+    }
 
-	public static EntityManagerFactory createFactory(Bundle bundle,
-			PersistenceUnitDefinition definition,
-			PersistenceProvider provider) {
-		Map<String, String> properties = new HashMap<String, String>();
-		return provider.createContainerEntityManagerFactory(
-				new PersistenceUnitInfoImpl(bundle, provider.getClass().getClassLoader(), definition),
-				properties);
-	}
+    public static EntityManagerFactory createFactory(Bundle bundle,
+            PersistenceUnitDefinition definition,
+            PersistenceProvider provider) {
+        Map<String, String> properties = new HashMap<String, String>();
+        return provider.createContainerEntityManagerFactory(
+                new PersistenceUnitInfoImpl(bundle, provider.getClass().getClassLoader(), definition),
+                properties);
+    }
 }

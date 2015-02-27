@@ -111,10 +111,10 @@ public class OurExtension implements Extension {
      * @param point The injection point event
      */
     public <T, X> void processInjectionPoints(@Observes ProcessInjectionPoint<T, X> event) {
-    	TrackerBean bean = processInjectionPoint(event.getInjectionPoint(), (e) -> event.addDefinitionError(e));
-    	if (bean != null) {
-    		beans.add(bean);
-    	}
+        TrackerBean bean = processInjectionPoint(event.getInjectionPoint(), (e) -> event.addDefinitionError(e));
+        if (bean != null) {
+            beans.add(bean);
+        }
     }
     
     /**
@@ -149,12 +149,12 @@ public class OurExtension implements Extension {
                 // Check the bean scope. Arrays cannot be injected into global scopes.
                 Class<? extends Annotation> scope = point.getBean().getScope();
                 if (!scope.equals(Dependent.class) && !scope.equals(RequestScoped.class)) {
-                	errorAdder.accept(new Exception("array type @ServiceReference-s cannot be "
-                			+ "injected in global scopes. Use a collection"));
+                    errorAdder.accept(new Exception("array type @ServiceReference-s cannot be "
+                            + "injected in global scopes. Use a collection"));
                 }
                 else {
-	                toTrack = clz.getComponentType();
-	                mapper = (a) -> a.getServices();
+                    toTrack = clz.getComponentType();
+                    mapper = (a) -> a.getServices();
                 }
             }
             else {
@@ -177,12 +177,12 @@ public class OurExtension implements Extension {
                 }
                 else {
                     errorAdder.accept(new Exception("only List<?> or its supertypes may be used for "
-                    		+ "parameterized @ServiceReference annotations"));
+                            + "parameterized @ServiceReference annotations"));
                 }
             }
             else {
                 errorAdder.accept(new Exception("don't understand " + t.getRawType() + 
-                		"as parameterized @ServiceReference type"));
+                        "as parameterized @ServiceReference type"));
             }
         }
         else {
@@ -221,15 +221,15 @@ public class OurExtension implements Extension {
      * @param event The process bean event. See CDI specification
      */
     public <T> void processBean(@Observes ProcessBean<T> event) {
-    	Bean<T> bean = event.getBean();
+        Bean<T> bean = event.getBean();
         Service service = BeanExporter.getServiceDefinition(bean);
         if (service == null) return;
         // Check the scope. Must be global.
         Class<? extends Annotation> scope = bean.getScope();
         if (!scope.equals(BundleScoped.class) && !scope.equals(ApplicationScoped.class)) { 
-	       	// Set an error.
-	       	event.addDefinitionError(new Exception("beans annotated with @Service must have a global scope"));
-	       	return;
+               // Set an error.
+               event.addDefinitionError(new Exception("beans annotated with @Service must have a global scope"));
+               return;
         }
         // Mark the bean as exportable.
         exportedBeans.put(bean, null);
@@ -260,16 +260,16 @@ public class OurExtension implements Extension {
      * 
      * @param manager The bean manager
      */
-	@SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")
     public <T> void finish(BeanManager manager) {
-    	exportedBeans.entrySet().stream().forEach((e) -> {
-			Bean<T> bean = (Bean<T>) e.getKey();
-    		CreationalContext<T> cc = manager.createCreationalContext(bean);
-    		Object instance = bean.create(cc);
-    		e.setValue(BeanExporter.registerService(context, bean, instance));
-    	});
+        exportedBeans.entrySet().stream().forEach((e) -> {
+            Bean<T> bean = (Bean<T>) e.getKey();
+            CreationalContext<T> cc = manager.createCreationalContext(bean);
+            Object instance = bean.create(cc);
+            e.setValue(BeanExporter.registerService(context, bean, instance));
+        });
     }
-	
+    
     /**
      * Register a context as service so it can be found at a later stage when notifications must occur
      * on them. Internal method.
@@ -294,12 +294,12 @@ public class OurExtension implements Extension {
         ArrayList<ServiceRegistration<?>> regs = new ArrayList<>();
         regs.addAll(this.registrations);
         regs.addAll(this.exportedBeans.values());
-       	regs.stream().
-        		forEach((s) ->  {
-        			try {
-        				s.unregister();
-        			} catch (Exception exc) {}
-        		});
-       	this.trackers.values().forEach((t) -> t.destroy());
+           regs.stream().
+                forEach((s) ->  {
+                    try {
+                        s.unregister();
+                    } catch (Exception exc) {}
+                });
+           this.trackers.values().forEach((t) -> t.destroy());
     }
 }

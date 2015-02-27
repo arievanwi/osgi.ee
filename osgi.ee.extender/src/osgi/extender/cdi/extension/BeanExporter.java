@@ -38,39 +38,39 @@ import osgi.cdi.annotation.Service;
  * @author Arie van Wijngaarden 
  */
 class BeanExporter {
-	
-	/**
-	 * Perform the service registration for a bean. The method checks whether a service annotation is
-	 * present on the bean, and if such, registers an OSGi service for the bean by determining the
-	 * interfaces implemented by the class. The properties of the service are retrieved from the
-	 * service annotation and set on the service registration.
-	 * 
-	 * @param context The context used for registering the service
-	 * @param bean The bean for which the action needs to take place
-	 * @param instance The instance of the bean that is used for registration
-	 * @return A service registration for the instance, or null if it is not a service
-	 */
-	static ServiceRegistration<?> registerService(BundleContext context, Bean<?> bean, Object instance) {
-		Service service = getServiceDefinition(bean);
-		if (service == null) return null;
+    
+    /**
+     * Perform the service registration for a bean. The method checks whether a service annotation is
+     * present on the bean, and if such, registers an OSGi service for the bean by determining the
+     * interfaces implemented by the class. The properties of the service are retrieved from the
+     * service annotation and set on the service registration.
+     * 
+     * @param context The context used for registering the service
+     * @param bean The bean for which the action needs to take place
+     * @param instance The instance of the bean that is used for registration
+     * @return A service registration for the instance, or null if it is not a service
+     */
+    static ServiceRegistration<?> registerService(BundleContext context, Bean<?> bean, Object instance) {
+        Service service = getServiceDefinition(bean);
+        if (service == null) return null;
         // Check the properties.
         Dictionary<String, ?> dict = getProperties(service);
         Collection<String> classes = getInterfaces(bean.getTypes());
         ServiceRegistration<?> s = context.registerService(
-        		classes.toArray(new String[classes.size()]), instance, dict);
+                classes.toArray(new String[classes.size()]), instance, dict);
         return s;
     }
 
-	/**
-	 * Get the interfaces of the types specified by the bean.
-	 * 
-	 * @param types The types of the bean
-	 * @return A set with interface names
-	 */
+    /**
+     * Get the interfaces of the types specified by the bean.
+     * 
+     * @param types The types of the bean
+     * @return A set with interface names
+     */
     static Set<String> getInterfaces(Collection<Type> types) {
         // Stream: filter classes, get the interfaces of them map them to their name.
         return types.stream().filter((t) -> (t instanceof Class<?>)).
-        		flatMap((t) -> Arrays.asList(((Class<?>) t).getInterfaces()).stream()).
+                flatMap((t) -> Arrays.asList(((Class<?>) t).getInterfaces()).stream()).
                 map((c) -> c.getName()).
                 collect(Collectors.toSet());
     }
@@ -102,12 +102,12 @@ class BeanExporter {
      * @return The service definition, if indicated. Null otherwise
      */
     static Service getServiceDefinition(Bean<?> bean) {
-    	Service[] services = bean.getBeanClass().getAnnotationsByType(Service.class);
-    	if (services.length == 0) return null;
-    	if (services.length > 1) {
-    		throw new RuntimeException("cannot have more than one @Service annotation. Class: " + 
-    				bean.getBeanClass().getName());
-    	}
-    	return services[0];
+        Service[] services = bean.getBeanClass().getAnnotationsByType(Service.class);
+        if (services.length == 0) return null;
+        if (services.length > 1) {
+            throw new RuntimeException("cannot have more than one @Service annotation. Class: " + 
+                    bean.getBeanClass().getName());
+        }
+        return services[0];
     }
 }

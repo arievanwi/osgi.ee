@@ -59,8 +59,8 @@ public class TrackerBean implements Bean<Object> {
     
     @Override
     public Object create(CreationalContext<Object> context) {
-    	Object obj = function.apply(tracker);
-    	return obj;
+        Object obj = function.apply(tracker);
+        return obj;
     }
 
     @Override

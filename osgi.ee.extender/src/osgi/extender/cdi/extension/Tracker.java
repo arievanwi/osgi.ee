@@ -60,17 +60,17 @@ class Tracker<T> {
      * @throws InvalidSyntaxException In case the filter is incorrect
      */
     Tracker(BundleContext context, Class<? extends T> type, String subfilter) throws InvalidSyntaxException {
-    	// Get the wiring.
-    	BundleWiring wiring = context.getBundle().adapt(BundleWiring.class);
-    	// Get the filter from the class and the subfilter
+        // Get the wiring.
+        BundleWiring wiring = context.getBundle().adapt(BundleWiring.class);
+        // Get the filter from the class and the subfilter
         Filter filter = getFilter(type, subfilter);
         // Create a new proxy for this type. This proxy is used if a normal object is referenced.
-    	proxy = type.cast(Proxy.newProxyInstance(wiring.getClassLoader(), new Class<?>[]{type}, 
-    			new Wrapper<T>(this::_getService)));
-    	// Construct the container for the tracked services that is i.e. returned by the collections variant.
-    	this.services = new CopyOnWriteArrayList<T>();
+        proxy = type.cast(Proxy.newProxyInstance(wiring.getClassLoader(), new Class<?>[]{type}, 
+                new Wrapper<T>(this::_getService)));
+        // Construct the container for the tracked services that is i.e. returned by the collections variant.
+        this.services = new CopyOnWriteArrayList<T>();
         this.trackedClass = type;
-    	// And start tracking the services.
+        // And start tracking the services.
         tracker = new ServiceTracker<T, T>(context, filter, new Customizer<T>(context, this.services));
         tracker.open();
     }
@@ -82,7 +82,7 @@ class Tracker<T> {
      * @return A list with services
      */
     List<T> getServiceList() {
-    	return Collections.unmodifiableList(services);
+        return Collections.unmodifiableList(services);
     }
     
     /**
@@ -92,11 +92,11 @@ class Tracker<T> {
      * @return The proxy
      */
     T getService() {
-    	return proxy;
+        return proxy;
     }
 
     private T _getService() {
-    	return getService(1000L);
+        return getService(1000L);
     }
     
     private T getService(long timeout) {
@@ -125,9 +125,9 @@ class Tracker<T> {
      * Destroy this instance, closing the tracker.
      */
     public void destroy() {
-    	try {
-    		tracker.close();
-    	} catch (Exception exc) {}
+        try {
+            tracker.close();
+        } catch (Exception exc) {}
     }
     
     /**
@@ -152,21 +152,21 @@ class Tracker<T> {
  * and then executes the method on that supplied value. 
  */
 class Wrapper<T> implements InvocationHandler {
-	private Supplier<T> supplier;
+    private Supplier<T> supplier;
 
-	Wrapper(Supplier<T> supplier) {
-		this.supplier = supplier;
-	}
-	
-	@Override
-	public Object invoke(Object proxy, Method method, Object[] args)
-			throws Throwable {
-		T obj = supplier.get();
-		if (obj == null) {
-			throw new Exception("(bugcheck): supplier for proxy returned null (service not present?). Cannot execute " + method);
-		}
-		return method.invoke(obj, args);
-	}
+    Wrapper(Supplier<T> supplier) {
+        this.supplier = supplier;
+    }
+    
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args)
+            throws Throwable {
+        T obj = supplier.get();
+        if (obj == null) {
+            throw new Exception("(bugcheck): supplier for proxy returned null (service not present?). Cannot execute " + method);
+        }
+        return method.invoke(obj, args);
+    }
 }
 
 /**
@@ -174,28 +174,28 @@ class Wrapper<T> implements InvocationHandler {
  * we are always backed with a list of services.
  */
 class Customizer<T> implements ServiceTrackerCustomizer<T, T> {
-	private List<T> services;
-	private BundleContext context;
-	
-	Customizer(BundleContext context, List<T> services) {
-		this.services = services;
-		this.context = context;
-	}
-	
-	@Override
-	public T addingService(ServiceReference<T> ref) {
-		T obj = context.getService(ref);
-		if (obj != null) {
-			services.add(obj);
-		}
-		return obj;
-	}
-	@Override
-	public void modifiedService(ServiceReference<T> sr, T obj) {
-	}
-	@Override
-	public void removedService(ServiceReference<T> sr, T obj) {
-		context.ungetService(sr);
-		services.remove(obj);
-	}
+    private List<T> services;
+    private BundleContext context;
+    
+    Customizer(BundleContext context, List<T> services) {
+        this.services = services;
+        this.context = context;
+    }
+    
+    @Override
+    public T addingService(ServiceReference<T> ref) {
+        T obj = context.getService(ref);
+        if (obj != null) {
+            services.add(obj);
+        }
+        return obj;
+    }
+    @Override
+    public void modifiedService(ServiceReference<T> sr, T obj) {
+    }
+    @Override
+    public void removedService(ServiceReference<T> sr, T obj) {
+        context.ungetService(sr);
+        services.remove(obj);
+    }
 }

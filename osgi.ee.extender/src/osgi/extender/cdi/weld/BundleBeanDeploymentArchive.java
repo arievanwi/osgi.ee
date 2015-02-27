@@ -54,7 +54,7 @@ class BundleBeanDeploymentArchive implements BeanDeploymentArchive {
      */
     @Override
     public Collection<String> getBeanClasses() {
-    	// Get the bundle class path.
+        // Get the bundle class path.
         String cp = bundle.getHeaders().get(Constants.BUNDLE_CLASSPATH);
         if (cp == null) {
             cp = ".";
@@ -62,12 +62,12 @@ class BundleBeanDeploymentArchive implements BeanDeploymentArchive {
         Stream<String> paths = Arrays.asList(cp.split(",")).stream();
         // Trick to make sure that running/debugging on eclipse doesn't mess things up.
         try (InputStream in = Helper.getLoader(bundle).getResourceAsStream("/build.properties")) {
-        	Properties props = new Properties();
-        	props.load(in);
-        	String replacement = props.getProperty("output..");
-        	if (replacement != null) {
-        		paths = paths.map((s) -> (".".equals(s)) ? replacement : s);
-        	}
+            Properties props = new Properties();
+            props.load(in);
+            String replacement = props.getProperty("output..");
+            if (replacement != null) {
+                paths = paths.map((s) -> (".".equals(s)) ? replacement : s);
+            }
         } catch (Exception exc) {}
         return paths.map((a) -> getBeans(a)).flatMap((a) -> a.stream()).collect(Collectors.toList());
     }

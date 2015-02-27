@@ -23,19 +23,19 @@ import javax.transaction.Synchronization;
  * Synchronizer for JTA transaction based functionality. 
  */
 class JTASynchronization implements Synchronization {
-	private ThreadLocal<EntityManager> local;
-	
-	public JTASynchronization(ThreadLocal<EntityManager> l) {
-		this.local = l;
-	}
+    private ThreadLocal<EntityManager> local;
+    
+    public JTASynchronization(ThreadLocal<EntityManager> l) {
+        this.local = l;
+    }
 
-	@Override
-	public void afterCompletion(int status) {
-		local.get().close();
-		local.remove();
-	}
+    @Override
+    public void afterCompletion(int status) {
+        local.get().close();
+        local.remove();
+    }
 
-	@Override
-	public void beforeCompletion() {
-	}
+    @Override
+    public void beforeCompletion() {
+    }
 }

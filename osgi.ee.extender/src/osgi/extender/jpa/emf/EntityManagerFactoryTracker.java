@@ -45,101 +45,101 @@ import org.osgi.service.jpa.EntityManagerFactoryBuilder;
  */
 @Component
 public class EntityManagerFactoryTracker {
-	private static String UNITNAME = EntityManagerFactoryBuilder.JPA_UNIT_NAME;
-	private Map<String, EntityManagerFactory> factories = new HashMap<>();
-	private Map<String, ServiceRegistration<EntityManager>> entityManagers = new HashMap<>();
-	private TransactionManager transactionManager;
-	private Class<?> proxy;
-	private BundleContext context;
-	
-	public EntityManagerFactoryTracker() {
-		proxy = Proxy.getProxyClass(getClass().getClassLoader(), new Class<?>[] {EntityManager.class});
-	}
-	
-	private static String unitName(Map<String, Object> props) {
-		return (String) props.get(UNITNAME);
-	}
-	
-	@Activate
-	synchronized void activate(BundleContext cont) {
-		this.context = cont;
-		factories.entrySet().forEach((e) -> register(e.getKey(), e.getValue()));
-	}
-	
-	/**
-	 * Register an entity manager for a factory. Is called during the dynamics (either at start or afterwards)
-	 * to handle the creation of an entity manager.
-	 * 
-	 * @param unitName The unit to register for
-	 * @param factory The factory used
-	 */
-	private synchronized void register(String unitName, EntityManagerFactory factory) {
-		if (context == null || transactionManager == null) return;
-		if (entityManagers.containsKey(unitName)) {
-			throw new RuntimeException("(bugcheck): registration for unit " + unitName + " already done");
-		}
-		// Proxy an entity manager.
-		EntityManager manager = proxy(factory);
-		// Register the proxy as service.
-		Hashtable<String, Object> props = new Hashtable<>();
-		props.put(UNITNAME, unitName);
-		ServiceRegistration<EntityManager> sr = context.registerService(EntityManager.class, manager, props);
-		entityManagers.put(unitName, sr);
-	}
+    private static String UNITNAME = EntityManagerFactoryBuilder.JPA_UNIT_NAME;
+    private Map<String, EntityManagerFactory> factories = new HashMap<>();
+    private Map<String, ServiceRegistration<EntityManager>> entityManagers = new HashMap<>();
+    private TransactionManager transactionManager;
+    private Class<?> proxy;
+    private BundleContext context;
+    
+    public EntityManagerFactoryTracker() {
+        proxy = Proxy.getProxyClass(getClass().getClassLoader(), new Class<?>[] {EntityManager.class});
+    }
+    
+    private static String unitName(Map<String, Object> props) {
+        return (String) props.get(UNITNAME);
+    }
+    
+    @Activate
+    synchronized void activate(BundleContext cont) {
+        this.context = cont;
+        factories.entrySet().forEach((e) -> register(e.getKey(), e.getValue()));
+    }
+    
+    /**
+     * Register an entity manager for a factory. Is called during the dynamics (either at start or afterwards)
+     * to handle the creation of an entity manager.
+     * 
+     * @param unitName The unit to register for
+     * @param factory The factory used
+     */
+    private synchronized void register(String unitName, EntityManagerFactory factory) {
+        if (context == null || transactionManager == null) return;
+        if (entityManagers.containsKey(unitName)) {
+            throw new RuntimeException("(bugcheck): registration for unit " + unitName + " already done");
+        }
+        // Proxy an entity manager.
+        EntityManager manager = proxy(factory);
+        // Register the proxy as service.
+        Hashtable<String, Object> props = new Hashtable<>();
+        props.put(UNITNAME, unitName);
+        ServiceRegistration<EntityManager> sr = context.registerService(EntityManager.class, manager, props);
+        entityManagers.put(unitName, sr);
+    }
 
-	private synchronized void unregister(String unitName) {
-		ServiceRegistration<EntityManager> manager = entityManagers.remove(unitName);
-		if (manager != null)
-			try {
-				manager.unregister();
-			} catch (Exception exc) {}
-	}
-	
-	/**
-	 * Entity manager factory setter. Takes care of setting the entity manager factory to the internal list.
-	 * 
-	 * @param factory The factory registered
-	 * @param properties The properties belonging to the service
-	 */
-	@Reference(cardinality = ReferenceCardinality.AT_LEAST_ONE, policy = ReferencePolicy.DYNAMIC)
-	synchronized void addEntityManagerFactory(EntityManagerFactory factory, Map<String, Object> properties) {
-		// Get the unit name and put the factory in a local map. We could do without, but maybe
-		// it is handy for future extensions/changes.
-		String unitName = unitName(properties);
-		factories.put(unitName, factory);
-		register(unitName, factory);
-	}
-	
-	synchronized void removeEntityManagerFactory(EntityManagerFactory factory, Map<String, Object> properties) {
-		// Remove the entity manager.
-		String unitName = unitName(properties);
-		factories.remove(unitName);
-		unregister(unitName);
-	}
-	
-	@Reference
-	void setTransactionManager(TransactionManager manager) {
-		this.transactionManager = manager;
-	}
-	
-	@Deactivate
-	void deactivate() {
-		entityManagers.values().stream().forEach((sr) -> sr.unregister());
-	}
-	
-	/**
-	 * This method creates a proxy for an entity manager. 
-	 * 
-	 * @param factory The entity manager factory to create the proxy for
-	 * @return The entity manager proxy
-	 */
-	private EntityManager proxy(EntityManagerFactory factory) {
-		InvocationHandler handler = new EntityProxyInvocationHandler(factory, transactionManager);
-		try {
-			EntityManager manager = (EntityManager) proxy.getConstructor(InvocationHandler.class).newInstance(handler);
-			return manager;
-		} catch (Exception exc) {
-			throw new RuntimeException(exc);
-		}
-	}
+    private synchronized void unregister(String unitName) {
+        ServiceRegistration<EntityManager> manager = entityManagers.remove(unitName);
+        if (manager != null)
+            try {
+                manager.unregister();
+            } catch (Exception exc) {}
+    }
+    
+    /**
+     * Entity manager factory setter. Takes care of setting the entity manager factory to the internal list.
+     * 
+     * @param factory The factory registered
+     * @param properties The properties belonging to the service
+     */
+    @Reference(cardinality = ReferenceCardinality.AT_LEAST_ONE, policy = ReferencePolicy.DYNAMIC)
+    synchronized void addEntityManagerFactory(EntityManagerFactory factory, Map<String, Object> properties) {
+        // Get the unit name and put the factory in a local map. We could do without, but maybe
+        // it is handy for future extensions/changes.
+        String unitName = unitName(properties);
+        factories.put(unitName, factory);
+        register(unitName, factory);
+    }
+    
+    synchronized void removeEntityManagerFactory(EntityManagerFactory factory, Map<String, Object> properties) {
+        // Remove the entity manager.
+        String unitName = unitName(properties);
+        factories.remove(unitName);
+        unregister(unitName);
+    }
+    
+    @Reference
+    void setTransactionManager(TransactionManager manager) {
+        this.transactionManager = manager;
+    }
+    
+    @Deactivate
+    void deactivate() {
+        entityManagers.values().stream().forEach((sr) -> sr.unregister());
+    }
+    
+    /**
+     * This method creates a proxy for an entity manager. 
+     * 
+     * @param factory The entity manager factory to create the proxy for
+     * @return The entity manager proxy
+     */
+    private EntityManager proxy(EntityManagerFactory factory) {
+        InvocationHandler handler = new EntityProxyInvocationHandler(factory, transactionManager);
+        try {
+            EntityManager manager = (EntityManager) proxy.getConstructor(InvocationHandler.class).newInstance(handler);
+            return manager;
+        } catch (Exception exc) {
+            throw new RuntimeException(exc);
+        }
+    }
 }

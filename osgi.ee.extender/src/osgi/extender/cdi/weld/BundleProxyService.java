@@ -39,8 +39,8 @@ class BundleProxyService implements ProxyServices {
         // Locate the correct bundle and get the class loader from it.
         // Note that this is kind of dirty since we check on the symbolic name.
         Collection<ClassLoader> found = Arrays.asList(extendedBundle.getBundleContext().getBundles()).stream().
-        		filter((a) -> a.getSymbolicName().contains("weld")).
-        		map((a) -> Helper.getLoader(a)).collect(Collectors.toList());
+                filter((a) -> a.getSymbolicName().contains("weld")).
+                map((a) -> Helper.getLoader(a)).collect(Collectors.toList());
         delegates.addAll(found);
         delegates.add(extendedBundleLoader);
     }
@@ -51,7 +51,7 @@ class BundleProxyService implements ProxyServices {
 
     @Override
     public ClassLoader getClassLoader(Class<?> beanType) {
-    	return CompoundClassLoader.from(delegates.toArray(new ClassLoader[delegates.size()]));
+        return CompoundClassLoader.from(delegates.toArray(new ClassLoader[delegates.size()]));
     }
 
     @Override

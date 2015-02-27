@@ -40,50 +40,50 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 public class CdiBundleChangeListener implements BundleTrackerCustomizer<Object> {
     private Bundle me;
     
-	public CdiBundleChangeListener(Bundle me) {
-		this.me = me;
-	}
-	
+    public CdiBundleChangeListener(Bundle me) {
+        this.me = me;
+    }
+    
     @Override
-	public Object addingBundle(Bundle bundle, BundleEvent event) {
-    	// Get the wiring of the bundle.
+    public Object addingBundle(Bundle bundle, BundleEvent event) {
+        // Get the wiring of the bundle.
         BundleWiring wiring = Helper.getWiring(bundle);
         // See it is wired to us as extender.
         List<BundleWire> requirements = wiring.getRequiredWires("osgi.extender");
         Context context = null;
         if (requirements != null &&
-        	requirements.stream().anyMatch((w) -> w.getProviderWiring().getBundle().equals(me))) {
-        	// Create the stuff.
+            requirements.stream().anyMatch((w) -> w.getProviderWiring().getBundle().equals(me))) {
+            // Create the stuff.
             WeldContainer container = new WeldContainer(bundle);
             Hashtable<String, Object> dict = new Hashtable<>();
             dict.put(Constants.BUNDLE_SYMBOLICNAME, bundle.getSymbolicName());
             String cat = bundle.getHeaders().get(Constants.BUNDLE_CATEGORY);
             if (cat != null) {
-            	dict.put(Constants.BUNDLE_CATEGORY, cat);
+                dict.put(Constants.BUNDLE_CATEGORY, cat);
             }
             ServiceRegistration<BeanManager> reg = bundle.getBundleContext().registerService(BeanManager.class, 
                 container.getManager(), dict);
             context = new Context(container, reg);
         }
         return context;
-	}
+    }
 
-	@Override
-	public void modifiedBundle(Bundle bundle, BundleEvent event, Object context) {
-	}
+    @Override
+    public void modifiedBundle(Bundle bundle, BundleEvent event, Object context) {
+    }
 
-	@Override
-	public void removedBundle(Bundle bundle, BundleEvent event, Object c) {
-		if (c != null) {
-			Context context = (Context) c;
-			try {
-				context.registration.unregister();
-			} catch (Exception exc) {}
-			context.container.destroy();
-		}
-	}
+    @Override
+    public void removedBundle(Bundle bundle, BundleEvent event, Object c) {
+        if (c != null) {
+            Context context = (Context) c;
+            try {
+                context.registration.unregister();
+            } catch (Exception exc) {}
+            context.container.destroy();
+        }
+    }
 
-	static class Context {
+    static class Context {
         final WeldContainer container;
         final ServiceRegistration<?> registration;
         Context(WeldContainer container, ServiceRegistration<?> registration) {

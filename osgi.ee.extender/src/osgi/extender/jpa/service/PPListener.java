@@ -23,17 +23,17 @@ import javax.persistence.spi.PersistenceProvider;
  * part. This is the signaling of changes to the persistence providers available in the system.
  */
 public interface PPListener {
-	/**
-	 * Signal that a persistence provider became available.
-	 * 
-	 * @param providerName The name of the provider
-	 * @param provider The provider itself
-	 */
-	public void added(String providerName, PersistenceProvider provider);
-	/**
-	 * Signal that a persistence provider went out of scope.
-	 * 
-	 * @param providerName The name of the provider
-	 */
-	public void removed(String providerName);
+    /**
+     * Signal that a persistence provider became available.
+     * 
+     * @param providerName The name of the provider
+     * @param provider The provider itself
+     */
+    public void added(String providerName, PersistenceProvider provider);
+    /**
+     * Signal that a persistence provider went out of scope.
+     * 
+     * @param providerName The name of the provider
+     */
+    public void removed(String providerName);
 }

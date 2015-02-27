@@ -26,14 +26,14 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
  * uses standard Java logging.
  */
 public class Activator implements BundleActivator {
-	@Override
-	public void start(BundleContext ctx) throws Exception {
-		SLF4JBridgeHandler.removeHandlersForRootLogger();
-		SLF4JBridgeHandler.install();
-	}
+    @Override
+    public void start(BundleContext ctx) throws Exception {
+        SLF4JBridgeHandler.removeHandlersForRootLogger();
+        SLF4JBridgeHandler.install();
+    }
 
-	@Override
-	public void stop(BundleContext ctx) throws Exception {
-		SLF4JBridgeHandler.uninstall();
-	}
+    @Override
+    public void stop(BundleContext ctx) throws Exception {
+        SLF4JBridgeHandler.uninstall();
+    }
 }

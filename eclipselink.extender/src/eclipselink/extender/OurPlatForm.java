@@ -24,13 +24,13 @@ import org.eclipse.persistence.sessions.DatabaseSession;
  */
 public class OurPlatForm extends ServerPlatformBase {
 
-	public OurPlatForm(DatabaseSession newDatabaseSession) {
-		super(newDatabaseSession);
-		System.out.println("Platform created");
-	}
+    public OurPlatForm(DatabaseSession newDatabaseSession) {
+        super(newDatabaseSession);
+        System.out.println("Platform created");
+    }
 
-	@Override
-	public Class<?> getExternalTransactionControllerClass() {
-		return TransactionController.class;
-	}
+    @Override
+    public Class<?> getExternalTransactionControllerClass() {
+        return TransactionController.class;
+    }
 }

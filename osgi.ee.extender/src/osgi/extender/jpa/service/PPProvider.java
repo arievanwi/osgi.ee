@@ -25,11 +25,11 @@ import javax.persistence.spi.PersistenceProvider;
  * by its name.
  */
 public interface PPProvider {
-	/**
-	 * Get a persistence provider by its name.
-	 * 
-	 * @param name The name of the persistence provider. May be a null or empty string
-	 * @return The persistence provider that is the best match given the requirements as name, value pair
-	 */
-	public Map.Entry<String, PersistenceProvider> get(String name);
+    /**
+     * Get a persistence provider by its name.
+     * 
+     * @param name The name of the persistence provider. May be a null or empty string
+     * @return The persistence provider that is the best match given the requirements as name, value pair
+     */
+    public Map.Entry<String, PersistenceProvider> get(String name);
 }

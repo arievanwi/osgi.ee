@@ -30,21 +30,21 @@ import org.osgi.util.tracker.ServiceTracker;
  * @author Arie van Wijngaarden
  */
 public class TransactionController extends JTATransactionController {
-	private static ServiceTracker<TransactionManager, TransactionManager> tracker;
-	
-	static void initialize(BundleContext context) {
-		tracker = new ServiceTracker<>(context, TransactionManager.class, null); 
-		tracker.open();
-	}
+    private static ServiceTracker<TransactionManager, TransactionManager> tracker;
+    
+    static void initialize(BundleContext context) {
+        tracker = new ServiceTracker<>(context, TransactionManager.class, null); 
+        tracker.open();
+    }
 
-	@Override
-	protected TransactionManager acquireTransactionManager() throws Exception {
-		TransactionManager manager = tracker.waitForService(2000L);
-		System.out.println("Transaction manager: " + manager);
-		return manager;
-	}
-	
-	static void destroy() {
-		tracker.close();
-	}
+    @Override
+    protected TransactionManager acquireTransactionManager() throws Exception {
+        TransactionManager manager = tracker.waitForService(2000L);
+        System.out.println("Transaction manager: " + manager);
+        return manager;
+    }
+    
+    static void destroy() {
+        tracker.close();
+    }
 }

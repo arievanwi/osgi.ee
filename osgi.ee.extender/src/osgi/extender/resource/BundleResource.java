@@ -24,16 +24,16 @@ import java.net.URL;
  * information.
  */
 public interface BundleResource {
-	/**
-	 * Get the URL on which this resource can be found.
-	 * 
-	 * @return The URL on which this resource can be found
-	 */
-	public URL getURL();
-	/**
-	 * Get the stream that belongs to this resource.
-	 * 
-	 * @return The input stream
-	 */
-	public InputStream getInputStream();
+    /**
+     * Get the URL on which this resource can be found.
+     * 
+     * @return The URL on which this resource can be found
+     */
+    public URL getURL();
+    /**
+     * Get the stream that belongs to this resource.
+     * 
+     * @return The input stream
+     */
+    public InputStream getInputStream();
 }

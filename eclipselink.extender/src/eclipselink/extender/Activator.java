@@ -28,17 +28,17 @@ import org.osgi.service.jpa.EntityManagerFactoryBuilder;
  * Bundle activator. Just registers our persistence provider with the service registry.
  */
 public class Activator implements BundleActivator {
-	@Override
-	public void start(BundleContext context) throws Exception {
-		TransactionController.initialize(context);
-		OurPersistenceProvider provider = new OurPersistenceProvider();
-		Hashtable<String, Object> dict = new Hashtable<>();
-		dict.put( EntityManagerFactoryBuilder.JPA_UNIT_PROVIDER, "org.eclipse.persistence.jpa.PersistenceProvider");
-		context.registerService(PersistenceProvider.class, provider, dict);
-	}
+    @Override
+    public void start(BundleContext context) throws Exception {
+        TransactionController.initialize(context);
+        OurPersistenceProvider provider = new OurPersistenceProvider();
+        Hashtable<String, Object> dict = new Hashtable<>();
+        dict.put( EntityManagerFactoryBuilder.JPA_UNIT_PROVIDER, "org.eclipse.persistence.jpa.PersistenceProvider");
+        context.registerService(PersistenceProvider.class, provider, dict);
+    }
 
-	@Override
-	public void stop(BundleContext context) throws Exception {
-		TransactionController.destroy();
-	}
+    @Override
+    public void stop(BundleContext context) throws Exception {
+        TransactionController.destroy();
+    }
 }

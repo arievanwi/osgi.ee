@@ -54,11 +54,11 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
             Class<? extends Annotation> scope, Consumer<ExtenderContext> consumer) {
         synchronized (this) {
             if (tracker == null) {
-            	// First try to use the bundle context from the web extender attribute.
+                // First try to use the bundle context from the web extender attribute.
                 BundleContext bc = (BundleContext) context.getAttribute("osgi-bundlecontext");
                 if (bc == null) {
-                	// Not running in a standard Web extender.
-                	bc = FrameworkUtil.getBundle(getClass()).getBundleContext();
+                    // Not running in a standard Web extender.
+                    bc = FrameworkUtil.getBundle(getClass()).getBundleContext();
                 }
                 tracker = new ServiceTracker<ExtenderContext, ExtenderContext>(bc, ExtenderContext.class, null);
                 tracker.open();

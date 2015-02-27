@@ -29,22 +29,22 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(immediate = true, property = "service.pid=XAdatasource")
 public class TransactionalDataSourceProvider extends BasicDataSourceProvider<BasicManagedDataSource> implements ManagedServiceFactory {
-	private TransactionManager transactionManager;
-	
-	@Override
-	public String getName() {
-		return "XAdatasource";
-	}
+    private TransactionManager transactionManager;
+    
+    @Override
+    public String getName() {
+        return "XAdatasource";
+    }
 
-	@Reference
-	void setTransactionManager(TransactionManager transactionManager) {
-		this.transactionManager = transactionManager;
-	}
-	
-	@Override
-	BasicManagedDataSource getDataSource() {
-		BasicManagedDataSource ds = new BasicManagedDataSource();
-		ds.setTransactionManager(transactionManager);
-		return ds;
-	}
+    @Reference
+    void setTransactionManager(TransactionManager transactionManager) {
+        this.transactionManager = transactionManager;
+    }
+    
+    @Override
+    BasicManagedDataSource getDataSource() {
+        BasicManagedDataSource ds = new BasicManagedDataSource();
+        ds.setTransactionManager(transactionManager);
+        return ds;
+    }
 }

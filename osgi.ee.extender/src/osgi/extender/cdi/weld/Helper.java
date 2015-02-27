@@ -32,13 +32,13 @@ class Helper {
                 Class<?> clz = l.loadClass(name);
                 return clz;
             } catch (ClassNotFoundException exc) {
-            	// This is normal.
-            	if (lastException == null) {
-            		lastException = exc;
-            	}
+                // This is normal.
+                if (lastException == null) {
+                    lastException = exc;
+                }
             } catch (Exception exc) {
-            	// This is exceptional, so track it.
-            	lastException = exc;
+                // This is exceptional, so track it.
+                lastException = exc;
             }
         }
         throw new RuntimeException("cannot load class \"" + name + "\"", lastException);

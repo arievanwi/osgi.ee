@@ -25,32 +25,32 @@ import javax.transaction.Synchronization;
  * Resource local synchronization.
  */
 class ResourceLocalSynchronization implements Synchronization {
-	private EntityTransaction trans;
-	private ThreadLocal<EntityManager> local;
-	
-	ResourceLocalSynchronization(EntityTransaction t, ThreadLocal<EntityManager> l) {
-		this.trans = t;
-		this.local = l;
-	}
+    private EntityTransaction trans;
+    private ThreadLocal<EntityManager> local;
+    
+    ResourceLocalSynchronization(EntityTransaction t, ThreadLocal<EntityManager> l) {
+        this.trans = t;
+        this.local = l;
+    }
 
-	@Override
-	public void afterCompletion(int status) {
-		try {
-			if (status == Status.STATUS_ROLLING_BACK || status == Status.STATUS_MARKED_ROLLBACK || 
-				status == Status.STATUS_ROLLEDBACK) {
-				trans.rollback();
-			}
-			else {
-				trans.commit();
-			}
-			local.get().close();
-			local.remove();
-		} catch (Exception exc) {
-			exc.printStackTrace();
-		}
-	}
+    @Override
+    public void afterCompletion(int status) {
+        try {
+            if (status == Status.STATUS_ROLLING_BACK || status == Status.STATUS_MARKED_ROLLBACK || 
+                status == Status.STATUS_ROLLEDBACK) {
+                trans.rollback();
+            }
+            else {
+                trans.commit();
+            }
+            local.get().close();
+            local.remove();
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
+    }
 
-	@Override
-	public void beforeCompletion() {
-	}
+    @Override
+    public void beforeCompletion() {
+    }
 }

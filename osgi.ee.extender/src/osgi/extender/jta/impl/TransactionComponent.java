@@ -37,37 +37,37 @@ import org.osgi.service.component.annotations.Deactivate;
  */
 @Component(configurationPid = "osgi.extender.jta.tm", configurationPolicy = ConfigurationPolicy.OPTIONAL)
 public class TransactionComponent {
-	private TransactionManagerImpl transactionManager;
-	private ServiceRegistration<TransactionManager> registration;
-	
-	@Activate
-	void activate(BundleContext context, Map<String, Object> properties) {
-		int rank = 0;
-		int time = 10;
-		if (properties != null) {
-			Object value = properties.get(Constants.SERVICE_RANKING);
-			if (value != null) {
-				rank = Integer.parseInt(value.toString());
-			}
-			value = properties.get("timeout");
-			if (value != null) {
-				time = Integer.parseInt(value.toString());
-			}
-		}
-		if (rank < -1000) return;
-		transactionManager = new TransactionManagerImpl(time);
-		Hashtable<String, Object> dict = new Hashtable<>();
-		dict.put(Constants.SERVICE_RANKING, rank);
-		registration = context.registerService(TransactionManager.class, transactionManager, dict);
-	}
-	
-	@Deactivate
-	void deactivate() {
-		if (transactionManager != null) {
-			try {
-				registration.unregister();
-			} catch (Exception exc) {}
-			transactionManager.destroy();
-		}
-	}
+    private TransactionManagerImpl transactionManager;
+    private ServiceRegistration<TransactionManager> registration;
+    
+    @Activate
+    void activate(BundleContext context, Map<String, Object> properties) {
+        int rank = 0;
+        int time = 10;
+        if (properties != null) {
+            Object value = properties.get(Constants.SERVICE_RANKING);
+            if (value != null) {
+                rank = Integer.parseInt(value.toString());
+            }
+            value = properties.get("timeout");
+            if (value != null) {
+                time = Integer.parseInt(value.toString());
+            }
+        }
+        if (rank < -1000) return;
+        transactionManager = new TransactionManagerImpl(time);
+        Hashtable<String, Object> dict = new Hashtable<>();
+        dict.put(Constants.SERVICE_RANKING, rank);
+        registration = context.registerService(TransactionManager.class, transactionManager, dict);
+    }
+    
+    @Deactivate
+    void deactivate() {
+        if (transactionManager != null) {
+            try {
+                registration.unregister();
+            } catch (Exception exc) {}
+            transactionManager.destroy();
+        }
+    }
 }

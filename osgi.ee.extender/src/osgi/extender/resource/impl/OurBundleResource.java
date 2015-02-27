@@ -28,21 +28,21 @@ import osgi.extender.resource.BundleResource;
  * Our own implementation of a bundle resource. Simple wrapping.
  */
 class OurBundleResource implements BundleResource {
-	private Bundle bundle;
-	private String path;
-	
-	OurBundleResource(Bundle bundle, String path) {
-		this.bundle = bundle;
-		this.path = path;
-	}
-	
-	@Override
-	public URL getURL() {
-		return bundle.getEntry(path);
-	}
+    private Bundle bundle;
+    private String path;
+    
+    OurBundleResource(Bundle bundle, String path) {
+        this.bundle = bundle;
+        this.path = path;
+    }
+    
+    @Override
+    public URL getURL() {
+        return bundle.getEntry(path);
+    }
 
-	@Override
-	public InputStream getInputStream() {
-		return bundle.adapt(BundleWiring.class).getClassLoader().getResourceAsStream(path);
-	}
+    @Override
+    public InputStream getInputStream() {
+        return bundle.adapt(BundleWiring.class).getClassLoader().getResourceAsStream(path);
+    }
 }

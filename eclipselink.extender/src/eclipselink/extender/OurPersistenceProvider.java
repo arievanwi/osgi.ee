@@ -29,18 +29,18 @@ import org.eclipse.persistence.config.PersistenceUnitProperties;
  * Extender class for eclipse link persistence provider.
  */
 public class OurPersistenceProvider extends org.eclipse.persistence.jpa.PersistenceProvider {
-	
-	@Override
-	public EntityManagerFactory createContainerEntityManagerFactory(
-			PersistenceUnitInfo info, @SuppressWarnings("rawtypes") Map properties) {
-		Map<String, Object> props = new HashMap<String, Object>();
-		if (properties != null) {
-			props.putAll(props);
-		}
-		// Check if we are using JTA. If so, overwrite the platform.
-		if (PersistenceUnitTransactionType.JTA.equals(info.getTransactionType())) {
-			props.put(PersistenceUnitProperties.TARGET_SERVER, OurPlatForm.class.getName());
-		}
-		return super.createContainerEntityManagerFactory(info, props);
-	}	
+    
+    @Override
+    public EntityManagerFactory createContainerEntityManagerFactory(
+            PersistenceUnitInfo info, @SuppressWarnings("rawtypes") Map properties) {
+        Map<String, Object> props = new HashMap<String, Object>();
+        if (properties != null) {
+            props.putAll(props);
+        }
+        // Check if we are using JTA. If so, overwrite the platform.
+        if (PersistenceUnitTransactionType.JTA.equals(info.getTransactionType())) {
+            props.put(PersistenceUnitProperties.TARGET_SERVER, OurPlatForm.class.getName());
+        }
+        return super.createContainerEntityManagerFactory(info, props);
+    }    
 }
