@@ -40,7 +40,6 @@ public class TransactionController extends JTATransactionController {
     @Override
     protected TransactionManager acquireTransactionManager() throws Exception {
         TransactionManager manager = tracker.waitForService(2000L);
-        System.out.println("Transaction manager: " + manager);
         return manager;
     }
     

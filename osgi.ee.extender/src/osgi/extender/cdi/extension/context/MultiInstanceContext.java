@@ -73,7 +73,7 @@ public class MultiInstanceContext extends AbstractContext implements ExtenderCon
     protected ContextBeansHolder getCache() {
         ContextBeansHolder thisOne = getCache(this.current.get());
         if (thisOne == null) {
-            throw new RuntimeException("(bugcheck): cache not found for current context");
+            throw new RuntimeException("(bugcheck): cache not found for current context. Scope: " + getScope());
         }
         return thisOne;
     }

@@ -43,8 +43,11 @@ class ResourceLocalSynchronization implements Synchronization {
             else {
                 trans.commit();
             }
-            local.get().close();
-            local.remove();
+            EntityManager manager = local.get();
+            if (manager != null) {
+                manager.close();
+                local.remove();
+            }
         } catch (Exception exc) {
             exc.printStackTrace();
         }

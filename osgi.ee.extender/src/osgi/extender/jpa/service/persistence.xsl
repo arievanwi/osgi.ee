@@ -32,8 +32,8 @@
       <properties>
         <xsl:for-each select="p:properties/p:property">
           <entry>
-            <key><string><xsl:value-of select="@name"/></string></key>
-            <value><string><xsl:value-of select="@name"/></string></value>
+            <string><xsl:value-of select="@name"/></string>
+            <string><xsl:value-of select="@value"/></string>
           </entry>
         </xsl:for-each>
       </properties>

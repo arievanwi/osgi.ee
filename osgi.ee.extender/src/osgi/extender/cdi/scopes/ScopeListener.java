@@ -88,7 +88,7 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
     public void requestInitialized(ServletRequestEvent event) {
         HttpServletRequest request = (HttpServletRequest) event.getServletRequest();
         doWithContext(request.getServletContext(), RequestScoped.class, 
-                (c) -> c.add(request));
+                (c) -> {c.add(request); c.setCurrent(request);});
         doWithContext(request.getServletContext(), SessionScoped.class, 
                 (c) -> c.setCurrent(request.getSession(true)));
     }

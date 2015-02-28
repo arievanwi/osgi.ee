@@ -31,8 +31,11 @@ class JTASynchronization implements Synchronization {
 
     @Override
     public void afterCompletion(int status) {
-        local.get().close();
-        local.remove();
+        EntityManager manager = local.get();
+        if (manager != null) {
+            manager.close();
+            local.remove();
+        }
     }
 
     @Override

@@ -26,7 +26,6 @@ public class OurPlatForm extends ServerPlatformBase {
 
     public OurPlatForm(DatabaseSession newDatabaseSession) {
         super(newDatabaseSession);
-        System.out.println("Platform created");
     }
 
     @Override
