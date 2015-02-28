@@ -27,13 +27,13 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
  */
 public class Activator implements BundleActivator {
     @Override
-    public void start(BundleContext ctx) throws Exception {
+    public void start(BundleContext ctx) {
         SLF4JBridgeHandler.removeHandlersForRootLogger();
         SLF4JBridgeHandler.install();
     }
 
     @Override
-    public void stop(BundleContext ctx) throws Exception {
+    public void stop(BundleContext ctx) {
         SLF4JBridgeHandler.uninstall();
     }
 }

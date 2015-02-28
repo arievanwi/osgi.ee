@@ -29,7 +29,7 @@ import org.osgi.service.jpa.EntityManagerFactoryBuilder;
  */
 public class Activator implements BundleActivator {
     @Override
-    public void start(BundleContext context) throws Exception {
+    public void start(BundleContext context) {
         TransactionController.initialize(context);
         OurPersistenceProvider provider = new OurPersistenceProvider();
         Hashtable<String, Object> dict = new Hashtable<>();
@@ -38,7 +38,7 @@ public class Activator implements BundleActivator {
     }
 
     @Override
-    public void stop(BundleContext context) throws Exception {
+    public void stop(BundleContext context) {
         TransactionController.destroy();
     }
 }

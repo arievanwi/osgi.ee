@@ -97,9 +97,9 @@ public class OurExtension implements Extension {
      * Before bean discovery. Adds the bundle scope, nothing more.
      * 
      * @param event The event
-     * @param manager The bean manager
      */
-    public void beforeBeanDiscovery(@Observes BeforeBeanDiscovery event, BeanManager manager) {
+    @SuppressWarnings("static-method")
+    public void beforeBeanDiscovery(@Observes BeforeBeanDiscovery event) {
         event.addScope(BundleScoped.class, false, false);
     }
     
