@@ -84,7 +84,7 @@ public class PersistenceProviderListener implements
         PersistenceProvider provider = tracked.get(name);
         Map.Entry<String, PersistenceProvider> entry = null;
         if (provider != null) {
-            entry = new AbstractMap.SimpleEntry<String, PersistenceProvider>(name, provider);
+            entry = new AbstractMap.SimpleEntry<>(name, provider);
         }
         else if (name == null || name.trim().length() == 0 && tracked.size() > 0) {
             entry = tracked.entrySet().iterator().next();

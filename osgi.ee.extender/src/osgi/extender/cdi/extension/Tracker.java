@@ -66,12 +66,12 @@ class Tracker<T> {
         Filter filter = getFilter(type, subfilter);
         // Create a new proxy for this type. This proxy is used if a normal object is referenced.
         proxy = type.cast(Proxy.newProxyInstance(wiring.getClassLoader(), new Class<?>[]{type}, 
-                new Wrapper<T>(this::_getService)));
+                new Wrapper<>(this::_getService)));
         // Construct the container for the tracked services that is i.e. returned by the collections variant.
-        this.services = new CopyOnWriteArrayList<T>();
+        this.services = new CopyOnWriteArrayList<>();
         this.trackedClass = type;
         // And start tracking the services.
-        tracker = new ServiceTracker<T, T>(context, filter, new Customizer<T>(context, this.services));
+        tracker = new ServiceTracker<>(context, filter, new Customizer<>(context, this.services));
         tracker.open();
     }
     
@@ -115,7 +115,7 @@ class Tracker<T> {
      * variants, a snapshot taking state of the status of the available services. 
      */
     T[] getServices() {
-        List<T> serv = new ArrayList<T>(getServiceList());
+        List<T> serv = new ArrayList<>(getServiceList());
         @SuppressWarnings("unchecked")
         T[] array = (T[]) Array.newInstance(trackedClass, serv.size());
         return serv.toArray(array);

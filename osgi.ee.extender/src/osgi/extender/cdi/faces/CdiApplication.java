@@ -93,7 +93,7 @@ class CdiApplication extends ApplicationWrapper {
                     filter = "(&" + filter + filterSpec + ")";
                 }
                 try {
-                    beanManagerTracker = new ServiceTracker<BeanManager, BeanManager>(bundleContext, 
+                    beanManagerTracker = new ServiceTracker<>(bundleContext, 
                             FrameworkUtil.createFilter(filter), null);
                     beanManagerTracker.open();
                 } catch (Exception exc) {
@@ -109,7 +109,7 @@ class CdiApplication extends ApplicationWrapper {
      * @param consumer The consumer to execute for each manager tracked
      */
     private void doWithBeanManagers(Consumer<BeanManager> consumer) {
-        List<BeanManager> managers = new ArrayList<BeanManager>();
+        List<BeanManager> managers = new ArrayList<>();
         check();
         if (beanManagerTracker != null) {
             managers.addAll(beanManagerTracker.getTracked().values());
@@ -156,7 +156,7 @@ class CdiApplication extends ApplicationWrapper {
     }
     
     private static class Wrapper {
-        private ExpressionFactory factory;
+        ExpressionFactory factory;
         Wrapper(ExpressionFactory f) {
             this.factory = f;
         }

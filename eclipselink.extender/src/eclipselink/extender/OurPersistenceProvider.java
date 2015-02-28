@@ -33,7 +33,7 @@ public class OurPersistenceProvider extends org.eclipse.persistence.jpa.Persiste
     @Override
     public EntityManagerFactory createContainerEntityManagerFactory(
             PersistenceUnitInfo info, @SuppressWarnings("rawtypes") Map properties) {
-        Map<String, Object> props = new HashMap<String, Object>();
+        Map<String, Object> props = new HashMap<>();
         if (properties != null) {
             props.putAll(props);
         }

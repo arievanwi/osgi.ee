@@ -60,7 +60,7 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
                     // Not running in a standard Web extender.
                     bc = FrameworkUtil.getBundle(getClass()).getBundleContext();
                 }
-                tracker = new ServiceTracker<ExtenderContext, ExtenderContext>(bc, ExtenderContext.class, null);
+                tracker = new ServiceTracker<>(bc, ExtenderContext.class, null);
                 tracker.open();
             }
         }

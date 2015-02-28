@@ -44,7 +44,7 @@ public abstract class AbstractContext implements AlterableContext {
      */
     AbstractContext(Class<? extends Annotation> scope, ContextBeansListener listener) {
         this.scope = scope;
-        this.scopeEntry = new HashMap<Object, ContextBeansHolder>();
+        this.scopeEntry = new HashMap<>();
         this.listener = listener;
     }
     

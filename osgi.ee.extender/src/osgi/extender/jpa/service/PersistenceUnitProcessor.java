@@ -47,7 +47,7 @@ class PersistenceUnitProcessor {
     public static EntityManagerFactory createFactory(Bundle bundle,
             PersistenceUnitDefinition definition,
             PersistenceProvider provider) {
-        Map<String, String> properties = new HashMap<String, String>();
+        Map<String, String> properties = new HashMap<>();
         return provider.createContainerEntityManagerFactory(
                 new PersistenceUnitInfoImpl(bundle, provider.getClass().getClassLoader(), definition),
                 properties);

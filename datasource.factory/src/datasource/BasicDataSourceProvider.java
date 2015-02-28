@@ -91,7 +91,7 @@ abstract class BasicDataSourceProvider<T extends BasicDataSource> {
         // Got it. Create the registration for it.
         ServiceRegistration<DataSource> sr = FrameworkUtil.getBundle(getClass()).
                 getBundleContext().registerService(DataSource.class, source, dict);
-        registrations.put(pid, new Registration<T>(source, sr));
+        registrations.put(pid, new Registration<>(source, sr));
     }
     
     /**

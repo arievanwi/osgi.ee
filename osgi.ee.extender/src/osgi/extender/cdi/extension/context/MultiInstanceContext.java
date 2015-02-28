@@ -53,7 +53,7 @@ public class MultiInstanceContext extends AbstractContext implements ExtenderCon
      */
     public MultiInstanceContext(Class<? extends Annotation> scope, ContextBeansListener listener) {
         super(scope, listener);
-        this.current = new ThreadLocal<Object>();
+        this.current = new ThreadLocal<>();
     }
     
     @Override

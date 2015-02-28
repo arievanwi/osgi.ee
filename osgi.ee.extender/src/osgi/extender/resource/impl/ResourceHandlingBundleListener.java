@@ -59,7 +59,7 @@ public class ResourceHandlingBundleListener implements BundleTrackerCustomizer<O
                 });
         }
         String[] identifiers = value.split("[,]");
-        final Map<String, String> mapping = new HashMap<String, String>();
+        final Map<String, String> mapping = new HashMap<>();
         mapping.put(BundleResourceProvider.DEFAULT, "/");
         Arrays.asList(identifiers).stream().
             map((s) -> { // Convert to key/value pairs in an array of 2 strings

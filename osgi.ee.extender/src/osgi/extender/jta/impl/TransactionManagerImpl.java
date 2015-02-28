@@ -105,6 +105,7 @@ class TransactionManagerImpl implements TransactionManager {
     private void setTransactionTimer(final long timo) {
         timer = new Timer("TransactionTimeout");
         TimerTask task = new TimerTask() {
+            @SuppressWarnings("synthetic-access")
             @Override
             public void run() {
                 long overdue = System.currentTimeMillis() - timo;

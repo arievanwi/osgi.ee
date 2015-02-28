@@ -47,7 +47,7 @@ class OurBundleResourceProvider implements BundleResourceProvider {
     
     @Override
     public Collection<BundleResource> getResources(String dir) {
-        ArrayList<BundleResource> resources = new ArrayList<BundleResource>();
+        ArrayList<BundleResource> resources = new ArrayList<>();
         String prefix = prefix(dir);
         if (prefix == null) return null;
         // Actually a directory lookup.

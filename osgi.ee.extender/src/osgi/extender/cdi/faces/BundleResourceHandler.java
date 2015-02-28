@@ -66,8 +66,7 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
         if (filt != null) {
             filter = "(&" + filter + filt + ")";
         }
-        tracker = new ServiceTracker<BundleResourceProvider, BundleResourceProvider>(context, 
-                context.createFilter(filter), null); 
+        tracker = new ServiceTracker<>(context, context.createFilter(filter), null); 
         tracker.open();
     }
     
@@ -144,7 +143,7 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
                     }
                     @Override
                     public Map<String, String> getResponseHeaders() {
-                        Map<String, String> headers = new HashMap<String, String>();
+                        Map<String, String> headers = new HashMap<>();
                         return headers;
                     }
                     @Override

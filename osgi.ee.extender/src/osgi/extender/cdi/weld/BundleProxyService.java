@@ -34,7 +34,7 @@ class BundleProxyService implements ProxyServices {
     private Collection<ClassLoader> delegates;
     
     BundleProxyService(Bundle extendedBundle) {
-        delegates = new ArrayList<ClassLoader>();
+        delegates = new ArrayList<>();
         ClassLoader extendedBundleLoader = Helper.getWiring(extendedBundle).getClassLoader();
         // Locate the correct bundle and get the class loader from it.
         // Note that this is kind of dirty since we check on the symbolic name.

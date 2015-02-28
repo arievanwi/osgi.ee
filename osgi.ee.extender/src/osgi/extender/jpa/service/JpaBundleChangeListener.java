@@ -88,7 +88,7 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
         if (persistence == null) return null;
         // Process the persistence units.
         String[] names = persistence.split(",");
-        final Collection<String> units = new LinkedHashSet<String>();
+        final Collection<String> units = new LinkedHashSet<>();
         // Start with META-INF/persistence.xml as required by the specification.
         units.add("/META-INF/persistence.xml");
         // Add the existing
@@ -133,7 +133,7 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
     
     @Override
     public synchronized void added(String providerName, PersistenceProvider p) {
-        new ArrayList<Bundle>(bundles.keySet()).stream().forEach((b) -> addRegistration(b));
+        new ArrayList<>(bundles.keySet()).stream().forEach((b) -> addRegistration(b));
     }
 
     @Override

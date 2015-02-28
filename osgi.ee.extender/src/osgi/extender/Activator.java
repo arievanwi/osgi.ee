@@ -46,7 +46,7 @@ public class Activator implements BundleActivator {
                 new CdiBundleChangeListener(context.getBundle()),
                 new ServicesCheckingBundleListener(),
                 new JpaBundleChangeListener(context.getBundle()));
-        trackers = listeners.stream().map((l) -> new BundleTracker<Object>(context, Bundle.ACTIVE, l)).collect(Collectors.toList());
+        trackers = listeners.stream().map((l) -> new BundleTracker<>(context, Bundle.ACTIVE, l)).collect(Collectors.toList());
         trackers.stream().forEach((t) -> t.open());
     }
 

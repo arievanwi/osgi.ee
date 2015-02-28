@@ -208,6 +208,7 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
             return (DataSource) Proxy.newProxyInstance(unitBundle.adapt(BundleWiring.class).getClassLoader(),
                     new Class<?>[] {DataSource.class},
                     new InvocationHandler() {
+                        @SuppressWarnings("synthetic-access")
                         @Override
                         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                             DataSource datasource = tracker.waitForService(1000L);
