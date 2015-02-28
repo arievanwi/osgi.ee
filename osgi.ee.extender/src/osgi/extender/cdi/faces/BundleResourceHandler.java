@@ -101,7 +101,8 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
     public Resource createResource(String name, String lib, String type) {
         Resource resource = getWrapped().createResource(name, lib, type);
         if (resource == null) {
-            ServletContext context = (ServletContext) FacesContext.getCurrentInstance().getExternalContext();
+            ServletContext context = 
+                    (ServletContext) FacesContext.getCurrentInstance().getExternalContext().getContext();
             // Find the faces registration.
             Optional<? extends ServletRegistration> registration = 
             context.getServletRegistrations().values().stream().
