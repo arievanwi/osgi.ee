@@ -24,12 +24,11 @@ import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.eclipse.persistence.config.PersistenceUnitProperties;
-import org.eclipse.persistence.jpa.PersistenceProvider;
 
 /**
  * Extender class for eclipse link persistence provider.
  */
-public class OurPersistenceProvider extends PersistenceProvider {
+public class OurPersistenceProvider extends org.eclipse.persistence.jpa.PersistenceProvider {
     
     @Override
     public EntityManagerFactory createContainerEntityManagerFactory(
