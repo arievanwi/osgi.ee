@@ -205,7 +205,7 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
                     new ServiceTracker<>(unitBundle.getBundleContext(), FrameworkUtil.createFilter(filter), null);
             tracker.open();
 
-            return (DataSource) Proxy.newProxyInstance(unitBundle.adapt(BundleWiring.class).getClassLoader(),
+            return (DataSource) Proxy.newProxyInstance(PersistenceUnitInfoImpl.this.getClassLoader(),
                     new Class<?>[] {DataSource.class},
                     new InvocationHandler() {
                         @Override
