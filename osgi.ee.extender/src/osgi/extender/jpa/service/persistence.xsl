@@ -27,7 +27,7 @@
         <xsl:apply-templates select="p:class" mode="string"/>
       </classes>
       <excludeUnlisted><xsl:value-of select="p:exclude-unlisted-classes"/></excludeUnlisted>
-      <cachingType><xsl:value-of select="p:share-cache-mode"/></cachingType>
+      <cachingType><xsl:value-of select="p:shared-cache-mode"/></cachingType>
       <validationMode><xsl:value-of select="p:validation-mode"/></validationMode>
       <properties>
         <xsl:for-each select="p:properties/p:property">
