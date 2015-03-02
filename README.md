@@ -1,7 +1,22 @@
-# osgi.ee
-Functionality for integrating JEE in OSGi environments via an extender for JPA, JTA, CDI and JSF.
-User documentation can be found [here][1].
+#### OSGi JEE7 extender 
+Getting JEE7 to work in OSGi can be a real pain: there are a lot of (open source) projects going on to implement more or less the 
+[OSGi R5 enterprise standard][1], but to integrate them is problematic. Not the least because of the dependencies that
+are required for some projects and mismatches in implementation versions.
 
-Note: this project is still in beta phase and work in progress.
+The repository here is meant as a one-stop solution for the following JEE7 standards on OSGi:
+* CDI 1.2. Implemented using the [Weld][2] CDI reference implementation, that can be downloaded [here][3].
+* JPA 2.1. Implemented using the standard JPA 2.1 interfaces only and tested with Eclipselink.
+* JTA 1.1. A transaction manager that can be used in local solutions in case of the absence of a genuine transaction manager.
+* JSF 2.1. The standard JSF solutions are OSGi aware, but this extender helps in integrating CDI with JSF. For this a standard OSGi web
+extender is needed with some additional functionality for finding Faces configuration files and tag libraries. This is functionality
+provided by [PAX-WEB][4].
 
-[1]: http://www.avineas.org/uploads/jee-extender.pdf
+Documentation about the usage of this extender can be found [here][5].
+
+The extenders are split over multiple bundles, so you are able to use either JPA/JTA only, CDI only, CDI + JSF or the whole package together.
+
+[1]: http://www.osgi.org/Specifications/HomePage
+[2]: http://weld.cdi-spec.org/
+[3]: http://search.maven.org/#artifactdetails|org.jboss.weld|weld-osgi-bundle|2.2.9.Final|jar
+[4]: https://ops4j1.jira.com/wiki/display/paxweb/Pax+Web
+[5]: http://www.avineas.org/uploads/jee-extender.pdf
