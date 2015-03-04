@@ -75,16 +75,16 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void rollback() {
-        resources.stream().forEach((r) -> delistResource(r, 0));
         setStatus(Status.STATUS_ROLLING_BACK);
         toSync.stream().forEach((s) -> s.beforeCompletion());
-        toSync.stream().forEach((s) -> s.afterCompletion(Status.STATUS_ROLLEDBACK));
+        resources.stream().forEach((r) -> delistResource(r, 0));
         resources.stream().forEach((r) -> {
             try {
                 r.rollback(xid);
             } catch (Exception exc) {
                 exc.printStackTrace();
             }});
+        toSync.stream().forEach((s) -> s.afterCompletion(Status.STATUS_ROLLEDBACK));
     }
     
     @Override
@@ -94,8 +94,8 @@ public class TransactionImpl implements Transaction {
         }
         else {
             setStatus(Status.STATUS_COMMITTING);
-            resources.stream().forEach((r) -> delistResource(r, 0));
             toSync.stream().forEach((s) -> s.beforeCompletion());
+            resources.stream().forEach((r) -> delistResource(r, 0));
             resources.stream().forEach((r) -> {
                 try {
                     r.prepare(xid);
@@ -103,7 +103,6 @@ public class TransactionImpl implements Transaction {
                     exc.printStackTrace();
                 }
             });
-            toSync.stream().forEach((s) -> s.afterCompletion(Status.STATUS_COMMITTED));
             resources.stream().forEach((r) -> {
                 try {
                     r.commit(xid, true);
@@ -111,6 +110,7 @@ public class TransactionImpl implements Transaction {
                     exc.printStackTrace();
                 }
             });
+            toSync.stream().forEach((s) -> s.afterCompletion(Status.STATUS_COMMITTED));
         }
     }
 

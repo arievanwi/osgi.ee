@@ -22,6 +22,7 @@ import java.lang.reflect.Method;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
+import javax.persistence.TransactionRequiredException;
 import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 
@@ -75,12 +76,12 @@ class EntityProxyInvocationHandler implements InvocationHandler {
             final TransactionManager transactionManager) throws Exception {
         Synchronization sync;
         try {
+            manager.joinTransaction();
+            sync = new JTASynchronization(local);
+        } catch (TransactionRequiredException exc) {
             EntityTransaction trans = manager.getTransaction();
             trans.begin();
-            manager.joinTransaction();
             sync = new ResourceLocalSynchronization(trans, local);
-        } catch (IllegalStateException exc) {
-            sync = new JTASynchronization(local);
         }
         transactionManager.getTransaction().registerSynchronization(sync);
     }

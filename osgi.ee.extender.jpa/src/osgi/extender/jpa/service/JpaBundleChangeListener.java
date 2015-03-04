@@ -28,6 +28,8 @@ import java.util.stream.Collectors;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.spi.PersistenceProvider;
+import javax.persistence.spi.PersistenceUnitInfo;
+import javax.persistence.spi.PersistenceUnitTransactionType;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
@@ -53,10 +55,12 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
     
     private void create(Bundle bundle, Context context) {
         Map.Entry<String, PersistenceProvider> pp = provider.get(context.definition.provider);
-        context.factory = PersistenceUnitProcessor.createFactory(bundle, 
+        PersistenceUnitInfo info = PersistenceUnitProcessor.getPersistenceUnitInfo(bundle, 
                 context.definition, pp.getValue());
+        context.factory = PersistenceUnitProcessor.createFactory(pp.getValue(), info);
         Hashtable<String, Object> props = new Hashtable<>();
         props.put(EntityManagerFactoryBuilder.JPA_UNIT_NAME, context.definition.name);
+        props.put(PersistenceUnitTransactionType.class.getName(), info.getTransactionType().name());
         context.registration = bundle.getBundleContext().registerService(
                 EntityManagerFactory.class, context.factory, props);
         context.usedProvider = pp.getKey();

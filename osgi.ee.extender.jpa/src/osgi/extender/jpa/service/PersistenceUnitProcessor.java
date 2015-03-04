@@ -25,6 +25,7 @@ import java.util.Map;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.spi.PersistenceProvider;
+import javax.persistence.spi.PersistenceUnitInfo;
 
 import org.osgi.framework.Bundle;
 
@@ -44,12 +45,14 @@ class PersistenceUnitProcessor {
         }
     }
 
-    public static EntityManagerFactory createFactory(Bundle bundle,
+    public static PersistenceUnitInfo getPersistenceUnitInfo(Bundle bundle,
             PersistenceUnitDefinition definition,
             PersistenceProvider provider) {
+        return new PersistenceUnitInfoImpl(bundle, provider.getClass().getClassLoader(), definition);
+    }
+    
+    public static EntityManagerFactory createFactory(PersistenceProvider provider, PersistenceUnitInfo info) {
         Map<String, String> properties = new HashMap<>();
-        return provider.createContainerEntityManagerFactory(
-                new PersistenceUnitInfoImpl(bundle, provider.getClass().getClassLoader(), definition),
-                properties);
+        return provider.createContainerEntityManagerFactory(info, properties);
     }
 }
