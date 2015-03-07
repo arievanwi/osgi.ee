@@ -18,7 +18,7 @@ The extenders are split over multiple bundles, so you are able to use either JPA
 ##### How to set-up?
 To set-up the environment, perform the following actions:
 * Download an eclipse version with plugin development enabled, for example the JEE version.
-* Import all the projects in this repository.
+* Import all the projects from this repository.
 * Open the file Runtime/Target.target in eclipse.
 * And set it as target environment.
 
