@@ -21,6 +21,7 @@ To set-up the environment, perform the following actions:
 * Import all the projects in this repository.
 * Open the file Runtime/Target.target in eclipse.
 * And set it as target environment.
+
 Code is written using Java 8 lambdas and streams, so you need Java 8.
 
 [1]: http://www.osgi.org/Specifications/HomePage
