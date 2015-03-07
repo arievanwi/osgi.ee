@@ -15,6 +15,14 @@ Documentation about the usage of this extender can be found [here][5].
 
 The extenders are split over multiple bundles, so you are able to use either JPA/JTA only, CDI only, CDI + JSF or the whole package together.
 
+##### How to set-up?
+To set-up the environment, perform the following actions:
+* Download an eclipse version with plugin development enabled, for example the JEE version.
+* Import all the projects in this repository.
+* Open the file Runtime/Target.target in eclipse.
+* And set it as target environment.
+Code is written using Java 8 lambdas and streams, so you need Java 8.
+
 [1]: http://www.osgi.org/Specifications/HomePage
 [2]: http://weld.cdi-spec.org/
 [3]: http://search.maven.org/#artifactdetails|org.jboss.weld|weld-osgi-bundle|2.2.9.Final|jar
