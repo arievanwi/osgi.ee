@@ -104,7 +104,9 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
     @Override
     public ClassLoader getNewTempClassLoader() {
         // I guess this one is only called when weaving is done.
-        return getClassLoader();
+        // For now, just return null. If it is used, we will get an
+        // error anyway. Alternative it to return getClassLoader().
+        return null;
     }
 
     @Override
