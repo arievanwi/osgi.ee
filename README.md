@@ -28,4 +28,4 @@ Code is written using Java 8 lambdas and streams, so you need Java 8.
 [2]: http://weld.cdi-spec.org/
 [3]: http://search.maven.org/#artifactdetails|org.jboss.weld|weld-osgi-bundle|2.2.9.Final|jar
 [4]: https://ops4j1.jira.com/wiki/display/paxweb/Pax+Web
-[5]: https://github.com/arievanwi/osgi.ee/jee-extender.pdf
+[5]: http://www.avineas.org/uploads/jee-extender.pdf
