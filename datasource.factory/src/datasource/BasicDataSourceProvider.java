@@ -27,6 +27,7 @@ import javax.sql.DataSource;
 import org.apache.commons.dbcp.BasicDataSource;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.annotations.Deactivate;
 
 /**
  * Basic class for data source providing. Takes care of property handling, registration, etc. and
@@ -115,6 +116,11 @@ abstract class BasicDataSourceProvider<T extends BasicDataSource> {
             destroy(reg);
     }
 
+    @Deactivate
+    void deactivate() {
+        registrations.values().stream().forEach((r) -> destroy(r));
+    }
+    
     /**
      * Destroy a registration. Normally only done when this bundle is stopped. However,
      * it is possible to update the properties which will cause an immediate effect on the
