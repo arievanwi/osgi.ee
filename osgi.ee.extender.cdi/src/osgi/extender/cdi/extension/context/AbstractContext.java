@@ -17,6 +17,7 @@
 package osgi.extender.cdi.extension.context;
 
 import java.lang.annotation.Annotation;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -71,7 +72,9 @@ public abstract class AbstractContext implements AlterableContext {
 
     @Override
     public boolean isActive() {
-        return scopeEntry.size() > 0;
+        synchronized (scopeEntry) {
+            return scopeEntry.size() > 0;
+        }
     }
 
     @Override
@@ -86,7 +89,10 @@ public abstract class AbstractContext implements AlterableContext {
      * @param managed The object that serves as cache key entry
      */
     public void add(Object managed) {
-        scopeEntry.put(managed, new ContextBeansHolder(listener));
+        ContextBeansHolder holder = new ContextBeansHolder(listener);
+        synchronized (scopeEntry) {
+            scopeEntry.put(managed, holder);
+        }
     }
     
     /**
@@ -95,16 +101,24 @@ public abstract class AbstractContext implements AlterableContext {
      * @param managed The key/identifier of the cache
      */
     public void remove(Object managed) {
-        ContextBeansHolder cache = scopeEntry.remove(managed);
+        ContextBeansHolder cache;
+        synchronized (scopeEntry) {
+            cache = scopeEntry.remove(managed);
+        }
         if (cache != null)
             cache.destroy();
     }
     
     /**
-     * Clean up the mess.
+     * Clean up the mess. 
      */
     public void destroy() {
-        scopeEntry.values().stream().forEach((c) -> c.destroy());
+        ArrayList<ContextBeansHolder> copy = new ArrayList<>();
+        synchronized (scopeEntry) {
+            copy.addAll(scopeEntry.values());
+            scopeEntry.clear();
+        }
+        copy.stream().forEach((c) -> c.destroy());
     }
     
     /**
@@ -115,7 +129,9 @@ public abstract class AbstractContext implements AlterableContext {
      * @return A bean cache, or null if the add method was not called earlier
      */
     protected ContextBeansHolder getCache(Object managed) {
-        return scopeEntry.get(managed);
+        synchronized (scopeEntry) {
+            return scopeEntry.get(managed);
+        }
     }
     
     /**
