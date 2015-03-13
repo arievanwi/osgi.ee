@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.persistence.EntityManagerFactory;
+import javax.persistence.SharedCacheMode;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
@@ -40,6 +41,9 @@ public class OurPersistenceProvider extends org.eclipse.persistence.jpa.Persiste
         // Check if we are using JTA. If so, overwrite the platform.
         if (PersistenceUnitTransactionType.JTA.equals(info.getTransactionType())) {
             props.put(PersistenceUnitProperties.TARGET_SERVER, OurPlatForm.class.getName());
+            if (!SharedCacheMode.NONE.equals(info.getSharedCacheMode())) {
+                System.out.println("WARNING: Second level caching in JTA mode doesn't always work correctly");
+            }
         }
         return super.createContainerEntityManagerFactory(info, props);
     }    
