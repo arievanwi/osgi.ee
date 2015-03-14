@@ -16,12 +16,18 @@
  */
 package osgi.extender;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Stream;
+
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.util.tracker.BundleTracker;
+import org.osgi.util.tracker.BundleTrackerCustomizer;
 
 import osgi.extender.cdi.weld.CdiBundleChangeListener;
+import osgi.extender.resource.impl.ResourceHandlingBundleListener;
 
 /**
  * Bundle activator. Only takes care of the bundle tracking stuff. All other functionality
@@ -30,16 +36,20 @@ import osgi.extender.cdi.weld.CdiBundleChangeListener;
  * @author Arie van Wijngaarden
  */
 public class Activator implements BundleActivator {
-    private BundleTracker<Object> tracker;
+    private Stream<BundleTracker<Object>> trackers;
     
     @Override
     public void start(BundleContext context) {
-        tracker = new BundleTracker<>(context, Bundle.ACTIVE, new CdiBundleChangeListener(context.getBundle()));
-        tracker.open();
+        Collection<BundleTrackerCustomizer<Object>> handlers = 
+                Arrays.asList(new CdiBundleChangeListener(context.getBundle()),
+                        new ResourceHandlingBundleListener());
+        trackers = handlers.stream().map((c) ->
+            new BundleTracker<>(context, Bundle.ACTIVE, c));
+        trackers.forEach((t) -> t.open());
     }
 
     @Override
     public void stop(BundleContext context) {
-        tracker.close();
+        trackers.forEach((t) -> t.close());
     }
 }
