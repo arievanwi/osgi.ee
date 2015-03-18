@@ -105,7 +105,7 @@ class Tracker<T> {
         } catch (InterruptedException exc) {
             Thread.currentThread().interrupt();
         }
-        return null;
+        return trackedClass.cast(null);
     }
     
     /**
