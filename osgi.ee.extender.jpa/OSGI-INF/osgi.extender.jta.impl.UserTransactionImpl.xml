@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="osgi.extender.jta.impl.UserTransactionImpl">
+   <implementation class="osgi.extender.jta.impl.UserTransactionImpl"/>
+   <service>
+      <provide interface="javax.transaction.UserTransaction"/>
+   </service>
+   <reference bind="setTransactionManager" cardinality="1..1" interface="javax.transaction.TransactionManager" name="TransactionManager" policy="static"/>
+</scr:component>

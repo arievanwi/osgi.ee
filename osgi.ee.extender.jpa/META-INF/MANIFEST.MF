@@ -27,7 +27,8 @@ Import-Package: javax.faces.context;version="2.2.0";resolution:=optional,
  org.w3c.dom,
  org.xml.sax
 Service-Component: OSGI-INF/osgi.extender.jta.impl.TransactionComponent.xml,
- OSGI-INF/osgi.extender.jpa.emf.EntityManagerFactoryTracker.xml
+ OSGI-INF/osgi.extender.jpa.emf.EntityManagerFactoryTracker.xml,
+ OSGI-INF/osgi.extender.jta.impl.UserTransactionImpl.xml
 Bundle-ClassPath: lib/xstream-1.4.8.jar,
  .
 Bundle-Activator: osgi.extender.Activator
