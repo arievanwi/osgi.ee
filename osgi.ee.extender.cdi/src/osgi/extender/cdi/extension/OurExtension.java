@@ -53,6 +53,7 @@ import org.osgi.framework.ServiceRegistration;
 import osgi.cdi.annotation.BundleScoped;
 import osgi.cdi.annotation.Service;
 import osgi.cdi.annotation.ServiceReference;
+import osgi.cdi.annotation.ViewScoped;
 import osgi.extender.cdi.extension.context.AbstractContext;
 import osgi.extender.cdi.extension.context.BasicContext;
 import osgi.extender.cdi.extension.context.MultiInstanceContext;
@@ -101,6 +102,7 @@ public class OurExtension implements Extension {
     @SuppressWarnings("static-method")
     public void beforeBeanDiscovery(@Observes BeforeBeanDiscovery event) {
         event.addScope(BundleScoped.class, false, false);
+        event.addScope(ViewScoped.class, true, true);
     }
     
     /**
@@ -249,6 +251,8 @@ public class OurExtension implements Extension {
         event.addContext(registerContext(new MultiInstanceContext(RequestScoped.class, null)));
         // And the bundle scope.
         event.addContext(new BasicContext(BundleScoped.class, null));
+        // And the view scope.
+        event.addContext(registerContext(new MultiInstanceContext(ViewScoped.class, null)));
         // Add the beans that satisfy the @ServiceReference injection points
         this.beans.stream().forEach((b) -> event.addBean(b));
     }

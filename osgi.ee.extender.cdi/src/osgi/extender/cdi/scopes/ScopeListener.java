@@ -18,6 +18,7 @@ package osgi.extender.cdi.scopes;
 
 import java.lang.annotation.Annotation;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.SessionScoped;
@@ -33,6 +34,8 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.util.tracker.ServiceTracker;
 
+import osgi.cdi.annotation.ViewScoped;
+
 /**
  * Listener for scope issues. Tracks sessions and requests and acts on registered services accordingly.
  * This listener should be registered with web applications as listener to make sure that
@@ -41,7 +44,28 @@ import org.osgi.util.tracker.ServiceTracker;
  * @author Arie van Wijngaarden
  */
 public class ScopeListener implements ServletRequestListener, HttpSessionListener {
+    private static final String LASTVIEW = ScopeListener.class.getName() + ".lastView";
     private ServiceTracker<ExtenderContext, ExtenderContext> tracker;
+    
+    private static boolean isNewViewMatch(HttpServletRequest request) {
+        HttpSession session = request.getSession(true);
+        String lastView = (String) session.getAttribute(LASTVIEW);
+        String viewId = request.getPathInfo();
+        if (lastView != null) {
+            // Check if this view is the same.
+            if (lastView.equals(viewId)) 
+                return false;
+            // Check whether we should skip this as a new view.
+            String viewMatch = request.getServletContext().getInitParameter("osgi.extender.cdi.scopes.newview");
+            if (viewMatch == null) {
+                viewMatch = ".*";
+            }
+            if (!Pattern.matches(viewMatch, viewId)) 
+                return false;
+        }
+        session.setAttribute(LASTVIEW, viewId);
+        return true;
+    }
     
     /**
      * Perform an action on all extender contexts that match a specific scope.
@@ -80,25 +104,37 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
     @Override
     public void sessionDestroyed(HttpSessionEvent event) {
         HttpSession session = event.getSession();
-        doWithContext(session.getServletContext(), SessionScoped.class,
+        ServletContext context = session.getServletContext();
+        doWithContext(context, SessionScoped.class,
                 (c) -> c.remove(session));
+        doWithContext(context, ViewScoped.class, (c) -> c.remove(session));
     }
 
     @Override
     public void requestInitialized(ServletRequestEvent event) {
         HttpServletRequest request = (HttpServletRequest) event.getServletRequest();
-        doWithContext(request.getServletContext(), RequestScoped.class, 
+        ServletContext context = request.getServletContext();
+        HttpSession session = request.getSession(true);
+        doWithContext(context, RequestScoped.class, 
                 (c) -> {c.add(request); c.setCurrent(request);});
-        doWithContext(request.getServletContext(), SessionScoped.class, 
-                (c) -> c.setCurrent(request.getSession(true)));
+        doWithContext(context, SessionScoped.class, 
+                (c) -> c.setCurrent(session));
+        doWithContext(context, ViewScoped.class, 
+                (c) -> {
+                    if (isNewViewMatch(request)) {
+                        c.remove(session);
+                        c.add(session); 
+                    }
+                    c.setCurrent(session);
+                });
     }
 
     @Override
     public void requestDestroyed(ServletRequestEvent event) {
         HttpServletRequest request = (HttpServletRequest) event.getServletRequest();
-        doWithContext(request.getServletContext(), SessionScoped.class, 
-                (c) -> c.setCurrent(null));
-        doWithContext(request.getServletContext(), RequestScoped.class, 
-                (c) -> c.remove(request));
+        ServletContext context = request.getServletContext();
+        doWithContext(context, SessionScoped.class, (c) -> c.setCurrent(null));
+        doWithContext(context, ViewScoped.class, (c) -> c.setCurrent(null));
+        doWithContext(context, RequestScoped.class, (c) -> c.remove(request));
     }
 }
