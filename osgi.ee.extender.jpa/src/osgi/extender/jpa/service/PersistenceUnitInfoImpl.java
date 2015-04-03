@@ -135,7 +135,9 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
         else {
             root = root.split(",")[0];
         }
-        root.replace(".", "/");
+        if (root.equals(".")) {
+            root = "/";
+        }
         return unitBundle.getEntry(root);
     }
 
