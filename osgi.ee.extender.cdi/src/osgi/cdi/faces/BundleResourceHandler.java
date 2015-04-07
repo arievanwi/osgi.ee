@@ -98,8 +98,10 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
      */
     @Override
     public Resource createResource(String name, String lib, String type) {
-        Resource resource = getWrapped().createResource(name, lib, type);
-        if (resource == null) {
+        Resource resource = null;
+        // Get the resource from the other bundles.
+        BundleResource thisResource = this.getResource(lib, name);
+        if (thisResource != null) {
             ServletContext context = 
                     (ServletContext) FacesContext.getCurrentInstance().getExternalContext().getContext();
             // Find the faces registration.
@@ -112,50 +114,51 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
             // This is all according to the Faces specification.
             if (first.startsWith("*")) {
                 // Extension mapping.
-                p = context.getContextPath() + ResourceHandler.RESOURCE_IDENTIFIER + "{}" + first.substring(1);
+                p = context.getContextPath() + ResourceHandler.RESOURCE_IDENTIFIER + "/{}" + first.substring(1);
             }
             else if (first.endsWith("*")){
                 // Must be prefix mapping.
-                p = context.getContextPath() + "/" + first.substring(0, first.length() - 1) + 
+                p = context.getContextPath() + first.substring(0, first.length() - 2) + 
                         ResourceHandler.RESOURCE_IDENTIFIER + "/{}"; 
             }
             else {
                 throw new RuntimeException("(bugcheck): cannot determine path for Faces servlet");
             }
             final String path = p;
-            // Get the resource from the other bundles.
-            BundleResource thisResource = this.getResource(lib, name);
-            if (thisResource != null) {
-                // Wrap it into a Resource object.
-                resource = new Resource() {
-                    @Override
-                    public InputStream getInputStream() {
-                        return thisResource.getInputStream();
+            // Wrap it into a Resource object.
+            resource = new Resource() {
+                @Override
+                public InputStream getInputStream() {
+                    return thisResource.getInputStream();
+                }
+                @Override
+                public String getRequestPath() {
+                    String query = "";
+                    String ln = getLibraryName();
+                    if (ln != null) {
+                        query += "?ln=" + ln;
                     }
-                    @Override
-                    public String getRequestPath() {
-                        String query = "";
-                        String ln = getLibraryName();
-                        if (ln != null) {
-                            query += "?ln=" + ln;
-                        }
-                        return path.replace("{}", this.getResourceName()) + query;
-                    }
-                    @Override
-                    public Map<String, String> getResponseHeaders() {
-                        Map<String, String> headers = new HashMap<>();
-                        return headers;
-                    }
-                    @Override
-                    public URL getURL() {
-                        return thisResource.getURL();
-                    }
-                    @Override
-                    public boolean userAgentNeedsUpdate(FacesContext c) {
-                        return true;
-                    }
-                };
-            }
+                    return path.replace("{}", this.getResourceName()) + query;
+                }
+                @Override
+                public Map<String, String> getResponseHeaders() {
+                    Map<String, String> headers = new HashMap<>();
+                    return headers;
+                }
+                @Override
+                public URL getURL() {
+                    return thisResource.getURL();
+                }
+                @Override
+                public boolean userAgentNeedsUpdate(FacesContext c) {
+                    return true;
+                }
+            };
+            resource.setLibraryName(lib);
+            resource.setResourceName(name);
+        }
+        else {
+            resource = getWrapped().createResource(name, lib, type);
         }
         return resource;
     }
