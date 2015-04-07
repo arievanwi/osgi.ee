@@ -51,6 +51,7 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
         HttpSession session = request.getSession(true);
         String lastView = (String) session.getAttribute(LASTVIEW);
         String viewId = request.getPathInfo();
+        if (viewId == null) viewId = "";
         if (lastView != null) {
             // Check if this view is the same.
             if (lastView.equals(viewId)) 
