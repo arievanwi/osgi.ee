@@ -19,11 +19,8 @@ package osgi.extender.cdi.extension;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,13 +31,13 @@ import java.util.stream.Collectors;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.context.RequestScoped;
-import javax.enterprise.context.SessionScoped;
 import javax.enterprise.context.spi.CreationalContext;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.spi.AfterBeanDiscovery;
+import javax.enterprise.inject.spi.AfterDeploymentValidation;
 import javax.enterprise.inject.spi.Bean;
 import javax.enterprise.inject.spi.BeanManager;
-import javax.enterprise.inject.spi.BeforeBeanDiscovery;
+import javax.enterprise.inject.spi.BeforeShutdown;
 import javax.enterprise.inject.spi.Extension;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.enterprise.inject.spi.ProcessBean;
@@ -50,31 +47,19 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;
 import org.osgi.framework.ServiceRegistration;
 
-import osgi.cdi.annotation.BundleScoped;
+import osgi.cdi.annotation.ComponentScoped;
 import osgi.cdi.annotation.Service;
 import osgi.cdi.annotation.ServiceReference;
-import osgi.cdi.annotation.ViewScoped;
-import osgi.extender.cdi.extension.context.AbstractContext;
-import osgi.extender.cdi.extension.context.BasicContext;
-import osgi.extender.cdi.extension.context.MultiInstanceContext;
-import osgi.extender.cdi.scopes.ExtenderContext;
 
 /**
- * Standard CDI extension. Takes care of handling the logic related to OSGi environments. Currently,
- * it has the following functionality:
- * <ul>
- * <li>It add the bundle scope to allow for a bundle specific context.</li>
- * <li>It creates our own handling of {@link SessionScoped} and {@link RequestScoped} contexts.</li>
- * <li>It takes care of the handling of our special qualifiers for exporting beans as services and
- * getting references to services exported by other bundles.</li>
- * </ul>
+ * Standard CDI extension. Takes care of handling the service logic related to OSGi environments, meaning that
+ * it takes care of service registration and service reference injection handling that occur
+ * in CDI contexts.
  * 
  * @author Arie van Wijngaarden
  */
-public class OurExtension implements Extension {
+public class ServiceExtension implements Extension {
     private BundleContext context;
-    private Collection<AbstractContext> contexts;                 // The scope contexts.
-    private Collection<ServiceRegistration<?>> registrations;     // Service registration of our scopes
     private Map<String, Tracker<?>> trackers;                     // Trackers for the imported services
     private Set<TrackerBean> beans;                               // Beans created to match the @ServiceReference-s
     private Map<Bean<?>, ServiceRegistration<?>> exportedBeans;   // The @Service annotated beans with their registration
@@ -85,24 +70,11 @@ public class OurExtension implements Extension {
      * @param context The bundle context. Used for declaring services and looking up services
      * and must be the bundle we are extending
      */
-    public OurExtension(BundleContext context) {
+    public ServiceExtension(BundleContext context) {
         this.context = context;
-        this.contexts = new ArrayList<>();
-        this.registrations = new ArrayList<>();
         this.trackers = new HashMap<>();
         this.beans = new HashSet<>();
         this.exportedBeans = new HashMap<>();
-    }
-    
-    /**
-     * Before bean discovery. Adds the bundle scope, nothing more.
-     * 
-     * @param event The event
-     */
-    @SuppressWarnings("static-method")
-    public void beforeBeanDiscovery(@Observes BeforeBeanDiscovery event) {
-        event.addScope(BundleScoped.class, false, false);
-        event.addScope(ViewScoped.class, true, true);
     }
     
     /**
@@ -193,6 +165,7 @@ public class OurExtension implements Extension {
         if (toTrack == null) return null;
         // Now handle the tracking.
         String subfilter = service.filter();
+        long waitTime = service.timeout();
         Filter filter;
         try {
             filter = Tracker.getFilter(toTrack, subfilter);
@@ -204,7 +177,7 @@ public class OurExtension implements Extension {
         Tracker<?> tracker = trackers.get(filter.toString());
         if (tracker == null) {
             try {
-                tracker = new Tracker<Object>(this.context, toTrack, subfilter);
+                tracker = new Tracker<Object>(this.context, toTrack, subfilter, waitTime);
                 trackers.put(filter.toString(), tracker);
             } catch (Exception exc) {
                 errorAdder.accept(exc);
@@ -228,10 +201,10 @@ public class OurExtension implements Extension {
         if (service == null) return;
         // Check the scope. Must be global.
         Class<? extends Annotation> scope = bean.getScope();
-        if (!scope.equals(BundleScoped.class) && !scope.equals(ApplicationScoped.class)) { 
-               // Set an error.
-               event.addDefinitionError(new Exception("beans annotated with @Service must have a global scope"));
-               return;
+        if (!scope.equals(ComponentScoped.class) && !scope.equals(ApplicationScoped.class)) { 
+            // Set an error.
+            event.addDefinitionError(new Exception("beans annotated with @Service must have a global scope"));
+            return;
         }
         // Mark the bean as exportable.
         exportedBeans.put(bean, null);
@@ -245,14 +218,6 @@ public class OurExtension implements Extension {
      * @param event The event that can be used for the actions
      */
     public void afterBeanDiscovery(@Observes AfterBeanDiscovery event) {
-        // Register the session scope context.
-        event.addContext(registerContext(new MultiInstanceContext(SessionScoped.class, null)));
-        // And the request scope context.
-        event.addContext(registerContext(new MultiInstanceContext(RequestScoped.class, null)));
-        // And the bundle scope.
-        event.addContext(new BasicContext(BundleScoped.class, null));
-        // And the view scope.
-        event.addContext(registerContext(new MultiInstanceContext(ViewScoped.class, null)));
         // Add the beans that satisfy the @ServiceReference injection points
         this.beans.stream().forEach((b) -> event.addBean(b));
     }
@@ -265,7 +230,7 @@ public class OurExtension implements Extension {
      * @param manager The bean manager
      */
     @SuppressWarnings("unchecked")
-    public <T> void finish(BeanManager manager) {
+    public <T> void finish(@Observes AfterDeploymentValidation val, BeanManager manager) {
         exportedBeans.entrySet().stream().forEach((e) -> {
             Bean<T> bean = (Bean<T>) e.getKey();
             CreationalContext<T> cc = manager.createCreationalContext(bean);
@@ -275,35 +240,15 @@ public class OurExtension implements Extension {
     }
     
     /**
-     * Register a context as service so it can be found at a later stage when notifications must occur
-     * on them. Internal method.
-     * 
-     * @param cont The context
-     * @return The same context for piping the result
-     */
-    private AbstractContext registerContext(AbstractContext cont) {
-        Hashtable<String, String> properties = new Hashtable<>();
-        // Put the scope type on it as property. Just to see what they are, not really needed.
-        properties.put("scope", cont.getScope().getSimpleName());
-        ServiceRegistration<?> reg = this.context.registerService(ExtenderContext.class.getName(), cont, properties);
-        this.registrations.add(reg);
-        return cont;
-    }
-    
-    /**
      * Destroy this extension. Removes all services.
      */
-    public void destroy() {
-        this.contexts.forEach((c) -> c.destroy());
-        ArrayList<ServiceRegistration<?>> regs = new ArrayList<>();
-        regs.addAll(this.registrations);
-        regs.addAll(this.exportedBeans.values());
-           regs.stream().
-                forEach((s) ->  {
-                    try {
-                        s.unregister();
-                    } catch (Exception exc) {}
-                });
-           this.trackers.values().forEach((t) -> t.destroy());
+    public void destroy(@Observes BeforeShutdown shut) {
+        this.exportedBeans.values().stream().
+            forEach((s) ->  {
+                try {
+                    s.unregister();
+                } catch (Exception exc) {}
+            });
+        this.trackers.values().forEach((t) -> t.destroy());
     }
 }

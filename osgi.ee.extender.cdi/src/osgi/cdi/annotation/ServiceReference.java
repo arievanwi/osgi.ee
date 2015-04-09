@@ -42,4 +42,9 @@ public @interface ServiceReference {
      * determined based on the type of the injection point.
      */ 
     String filter() default "";
+    /**
+     * The time, in ms, to wait for a service to become available. Defaults depend on whether a collection
+     * or an object is used (the object waits some time, the collection doesn't).
+     */
+    long timeout() default Long.MIN_VALUE;
 }

@@ -50,6 +50,7 @@ class Tracker<T> {
     private Class<? extends T> trackedClass;
     private T proxy;
     private List<T> services;
+    private long waitTime;
     
     /**
      * Create a tracker for a specific object/filter combination.
@@ -57,9 +58,10 @@ class Tracker<T> {
      * @param context The bundle context. Must be the context of the bundle we are extending
      * @param type The type of the service
      * @param subfilter The sub-filter for the service
+     * @param waitTime The time, in ms, to wait for a service to become available
      * @throws InvalidSyntaxException In case the filter is incorrect
      */
-    Tracker(BundleContext context, Class<? extends T> type, String subfilter) throws InvalidSyntaxException {
+    Tracker(BundleContext context, Class<? extends T> type, String subfilter, long waitTime) throws InvalidSyntaxException {
         // Get the wiring.
         BundleWiring wiring = context.getBundle().adapt(BundleWiring.class);
         // Get the filter from the class and the subfilter
@@ -70,6 +72,7 @@ class Tracker<T> {
         // Construct the container for the tracked services that is i.e. returned by the collections variant.
         this.services = new CopyOnWriteArrayList<>();
         this.trackedClass = type;
+        this.waitTime = waitTime;
         // And start tracking the services.
         tracker = new ServiceTracker<>(context, filter, new Customizer<>(context, this.services));
         tracker.open();
@@ -82,7 +85,21 @@ class Tracker<T> {
      * @return A list with services
      */
     List<T> getServiceList() {
-        return Collections.unmodifiableList(services);
+        long toWait = waitTime;
+        if (toWait < 0) {
+            toWait = 0L;
+        }
+        synchronized (services) {
+            while (services.size() < 1 && toWait > 0) {
+                try {
+                    services.wait(toWait);
+                } catch (InterruptedException exc) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+            return Collections.unmodifiableList(services);
+        }
     }
     
     /**
@@ -96,7 +113,11 @@ class Tracker<T> {
     }
 
     private T _getService() {
-        return getService(1000L);
+        long toWait = waitTime;
+        if (toWait < 0) {
+            toWait = 1000L;
+        }
+        return getService(toWait);
     }
     
     private T getService(long timeout) {
@@ -163,7 +184,8 @@ class Wrapper<T> implements InvocationHandler {
             throws Throwable {
         T obj = supplier.get();
         if (obj == null) {
-            throw new Exception("(bugcheck): supplier for proxy returned null (service not present?). Cannot execute " + method);
+            throw new NullPointerException(
+                    "(bugcheck): supplier for proxy returned null (service not present?). Cannot execute " + method);
         }
         return method.invoke(obj, args);
     }
@@ -186,7 +208,10 @@ class Customizer<T> implements ServiceTrackerCustomizer<T, T> {
     public T addingService(ServiceReference<T> ref) {
         T obj = context.getService(ref);
         if (obj != null) {
-            services.add(obj);
+            synchronized (services) {
+                services.add(obj);
+                services.notifyAll();
+            }
         }
         return obj;
     }
@@ -196,6 +221,8 @@ class Customizer<T> implements ServiceTrackerCustomizer<T, T> {
     @Override
     public void removedService(ServiceReference<T> sr, T obj) {
         context.ungetService(sr);
-        services.remove(obj);
+        synchronized (services) {
+            services.remove(obj);
+        }
     }
 }

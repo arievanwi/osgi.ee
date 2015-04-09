@@ -17,6 +17,8 @@
 package osgi.extender.cdi.weld;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.Extension;
@@ -24,8 +26,11 @@ import javax.enterprise.inject.spi.Extension;
 import org.jboss.weld.bootstrap.WeldBootstrap;
 import org.jboss.weld.bootstrap.spi.Deployment;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 
-import osgi.extender.cdi.extension.OurExtension;
+import osgi.extender.cdi.extension.ComponentExtension;
+import osgi.extender.cdi.extension.ScopeExtension;
+import osgi.extender.cdi.extension.ServiceExtension;
 import osgi.extender.cdi.extension.OurMetaData;
 
 /**
@@ -37,25 +42,32 @@ import osgi.extender.cdi.extension.OurMetaData;
 class WeldContainer {
     private WeldBootstrap boot;
     private Deployment deployment;
-    private OurExtension extension;
     
     WeldContainer(Bundle toExtend) {
         boot = new WeldBootstrap();
         String contextName = "osgi-cdi:" + toExtend.getBundleId();
         // Construct our extension which does the main of the work.
-        extension = new OurExtension(toExtend.getBundleContext());
-        deployment = new OurDeployment(toExtend, Arrays.asList(
-                new OurMetaData<Extension>(extension.getClass().getName(), extension)
-                ));
-        // Go through the bootstrap sequence. This automatically fires the
-        // events to our extension.
+        BundleContext context = toExtend.getBundleContext();
+        List<Extension> extensions = Arrays.asList(
+                new ScopeExtension(context),
+                new ServiceExtension(context),
+                new ComponentExtension());
+        deployment = new OurDeployment(toExtend,
+                extensions.stream().map((e) -> new OurMetaData<>(e.getClass().getName(), e)).collect(Collectors.toList()));
+        // Start the container. Needs to be called now because otherwise no bean manager is returned from the bootstrap.
         boot.startContainer(contextName, new OurEnvironment(), deployment);
+        // Takes care of the extension initialization. We would want to do this inside the separate
+        // thread, but this causes some exception breakpoints because our extensions are not proxyable.
         boot.startInitialization();
-        boot.deployBeans();
-        boot.validateBeans();
-        boot.endInitialization();
-        // Now the CDI container is up. Finish the work on the extension.
-        extension.finish(getManager());
+        // The remainder is done in a separate thread.
+        Runnable runner = () -> {
+            // Go through the bootstrap sequence. This automatically fires the
+            // events to our extensions.
+            boot.deployBeans();
+            boot.validateBeans();
+            boot.endInitialization();
+        };
+        new Thread(runner).start();
     }
     
     BeanManager getManager() {
@@ -64,6 +76,5 @@ class WeldContainer {
     
     void destroy() {
         boot.shutdown();
-        extension.destroy();
     }
 }

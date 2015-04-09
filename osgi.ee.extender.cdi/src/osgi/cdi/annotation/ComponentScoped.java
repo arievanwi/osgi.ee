@@ -26,8 +26,10 @@ import java.lang.annotation.Target;
 import javax.enterprise.context.NormalScope;
 
 /**
- * Bundle scope: a new normal scope for convenience. Doesn't need to be used,
- * but it is a scope that is handled internally as a bundle-permanent scope.
+ * Component scope: a new normal scope that differs from the others that beans for this
+ * scope are automatically created during construction of the CDI container and can 
+ * be compared to OSGi SCR components. Note that it is not needed to create component
+ * scope CDI beans that are also marked as service, since these will be created during startup anyway.
  * 
  * @author Arie van Wijngaarden
  */
@@ -36,5 +38,5 @@ import javax.enterprise.context.NormalScope;
 @Documented
 @NormalScope
 @Inherited
-public @interface BundleScoped {
+public @interface ComponentScoped {
 }
