@@ -90,12 +90,11 @@ class Tracker<T> {
             toWait = 0L;
         }
         synchronized (services) {
-            while (services.size() < 1 && toWait > 0) {
+            if (services.size() < 1 && toWait > 0) {
                 try {
                     services.wait(toWait);
                 } catch (InterruptedException exc) {
                     Thread.currentThread().interrupt();
-                    break;
                 }
             }
             return Collections.unmodifiableList(services);
