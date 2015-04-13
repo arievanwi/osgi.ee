@@ -16,6 +16,7 @@
  */
 package osgi.extender.cdi.weld;
 
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +25,7 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.Extension;
 
 import org.jboss.weld.bootstrap.WeldBootstrap;
+import org.jboss.weld.bootstrap.spi.BeansXml;
 import org.jboss.weld.bootstrap.spi.Deployment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -52,7 +54,12 @@ class WeldContainer {
                 new ScopeExtension(context),
                 new ServiceExtension(context),
                 new ComponentExtension());
-        deployment = new OurDeployment(toExtend,
+        BeansXml beansXml = BeansXml.EMPTY_BEANS_XML;
+        URL url = toExtend.getEntry("/META-INF/beans.xml");
+        if (url != null) {
+            beansXml = boot.parse(url);
+        }
+        deployment = new OurDeployment(toExtend, beansXml,
                 extensions.stream().map((e) -> new OurMetaData<>(e.getClass().getName(), e)).collect(Collectors.toList()));
         // Start the container. Needs to be called now because otherwise no bean manager is returned from the bootstrap.
         boot.startContainer(contextName, new OurEnvironment(), deployment);

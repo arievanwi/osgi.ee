@@ -24,6 +24,7 @@ import javax.enterprise.inject.spi.Extension;
 import org.jboss.weld.bootstrap.api.ServiceRegistry;
 import org.jboss.weld.bootstrap.api.helpers.SimpleServiceRegistry;
 import org.jboss.weld.bootstrap.spi.BeanDeploymentArchive;
+import org.jboss.weld.bootstrap.spi.BeansXml;
 import org.jboss.weld.bootstrap.spi.Deployment;
 import org.jboss.weld.bootstrap.spi.Metadata;
 import org.jboss.weld.serialization.spi.ProxyServices;
@@ -45,13 +46,14 @@ class OurDeployment implements Deployment {
      * Construct this deployment.
      * 
      * @param toExtend The bundle we are extending
+     * @param beansXml The beans file definition
      * @param extensions The extensions to return
      */
-    OurDeployment(Bundle toExtend, Iterable<Metadata<Extension>> extensions) {
+    OurDeployment(Bundle toExtend, BeansXml beansXml, Iterable<Metadata<Extension>> extensions) {
         this.extensions = extensions;
         services = new SimpleServiceRegistry();
         services.add(ProxyServices.class, new BundleProxyService(toExtend));
-        archive = new BundleBeanDeploymentArchive(toExtend);
+        archive = new BundleBeanDeploymentArchive(toExtend, beansXml);
     }
     
     @Override

@@ -40,11 +40,13 @@ import org.osgi.framework.wiring.BundleWiring;
  */
 class BundleBeanDeploymentArchive implements BeanDeploymentArchive {
     private Bundle bundle;
+    private BeansXml beanFiles;
     private SimpleServiceRegistry services = new SimpleServiceRegistry();
 
-    public BundleBeanDeploymentArchive(Bundle b) {
+    public BundleBeanDeploymentArchive(Bundle b, BeansXml beanFiles) {
         this.bundle = b;
         services.add(ResourceLoader.class, new BundleResourceLoader(bundle));
+        this.beanFiles = (beanFiles == null) ? BeansXml.EMPTY_BEANS_XML : beanFiles;
     }
     
     /**
@@ -91,7 +93,7 @@ class BundleBeanDeploymentArchive implements BeanDeploymentArchive {
 
     @Override
     public BeansXml getBeansXml() {
-        return BeansXml.EMPTY_BEANS_XML;
+        return beanFiles;
     }
 
     @Override
