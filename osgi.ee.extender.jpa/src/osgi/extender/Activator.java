@@ -34,7 +34,7 @@ public class Activator implements BundleActivator {
     @Override
     public void start(BundleContext context) {
         tracker = new BundleTracker<>(context, Bundle.ACTIVE, new JpaBundleChangeListener(context.getBundle()));
-        tracker.open();
+        new Thread(() -> tracker.open()).start();
     }
 
     @Override

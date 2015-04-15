@@ -123,7 +123,7 @@ public class EntityManagerFactoryTracker {
     }
     
     @Deactivate
-    void deactivate() {
+    synchronized void deactivate() {
         entityManagers.values().stream().forEach((sr) -> sr.unregister());
     }
     
