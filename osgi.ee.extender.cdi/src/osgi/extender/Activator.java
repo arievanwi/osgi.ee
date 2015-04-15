@@ -45,7 +45,7 @@ public class Activator implements BundleActivator {
                         new ResourceHandlingBundleListener());
         trackers = handlers.stream().map((c) ->
             new BundleTracker<>(context, Bundle.ACTIVE, c));
-        trackers.forEach((t) -> t.open());
+        new Thread(() -> trackers.forEach((t) -> t.open())).start();
     }
 
     @Override
