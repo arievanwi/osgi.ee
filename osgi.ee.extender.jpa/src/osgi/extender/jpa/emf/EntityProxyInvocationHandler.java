@@ -53,14 +53,19 @@ class EntityProxyInvocationHandler implements InvocationHandler {
     
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        String methodName = method.getName();
+        if (methodName.equals("getTransaction")) {
+            throw new RuntimeException("(bugcheck): transactions are automatically managed");
+        }
+        if (methodName.equals("equals") || methodName.equals("hashCode")) {
+            return method.invoke(proxy, args);
+        }
+        // Normal entity manager method.
         EntityManager manager = local.get();
         if (manager == null) {
             manager = factory.createEntityManager();
             registerEntityManager(manager, local, transactionManager);
             local.set(manager);
-        }
-        if (method.getName().equals("getTransaction")) {
-            throw new RuntimeException("(bugcheck): transactions are automatically managed");
         }
         return method.invoke(manager, args);
     }
