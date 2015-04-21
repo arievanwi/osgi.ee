@@ -18,6 +18,7 @@ package osgi.extender.cdi.extension;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
@@ -186,7 +187,11 @@ class Wrapper<T> implements InvocationHandler {
             throw new NullPointerException(
                     "(bugcheck): supplier for proxy returned null (service not present?). Cannot execute " + method);
         }
-        return method.invoke(obj, args);
+        try {
+            return method.invoke(obj, args);
+        } catch (InvocationTargetException exc) {
+            throw exc.getCause();
+        }
     }
 }
 
