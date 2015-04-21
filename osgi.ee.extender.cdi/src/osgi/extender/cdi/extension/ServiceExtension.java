@@ -247,8 +247,7 @@ public class ServiceExtension implements Extension {
         exportedBeans.entrySet().stream().forEach((e) -> {
             Bean<T> bean = (Bean<T>) e.getKey();
             CreationalContext<T> cc = manager.createCreationalContext(bean);
-            Object instance = bean.create(cc);
-            e.setValue(BeanExporter.registerService(context, bean, instance));
+            e.setValue(BeanExporter.registerService(context, bean, new BeanServiceFactory<>(cc, bean)));
         });
     }
     

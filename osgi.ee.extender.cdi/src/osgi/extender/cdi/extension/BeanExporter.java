@@ -47,7 +47,7 @@ class BeanExporter {
      * 
      * @param context The context used for registering the service
      * @param bean The bean for which the action needs to take place
-     * @param instance The instance of the bean that is used for registration
+     * @param instance The instance or service factory of the bean that is used for registration
      * @return A service registration for the instance, or null if it is not a service
      */
     static ServiceRegistration<?> registerService(BundleContext context, Bean<?> bean, Object instance) {
