@@ -143,11 +143,24 @@ public class ServiceExtension implements Extension {
             if (t.getRawType() instanceof Class) {
                 Class<?> container = (Class<?>) t.getRawType();
                 if (container.isAssignableFrom(List.class)) {
-                    // We can use it as a consumer of a list.
-                    Class<?> firstType = (Class<?>) t.getActualTypeArguments()[0];
-                    // Use a tracker for this type.
-                    toTrack = firstType;
-                    mapper = (a) -> a.getServiceList();
+                    // We can use it as a consumer of a list. Locate the first raw type at any depth.
+                    Type firstT = t.getActualTypeArguments()[0];
+                    Class<?> firstType = null;
+                    if (firstT instanceof Class) {
+                        firstType = (Class<?>) firstT;
+                    }
+                    else if (firstT instanceof ParameterizedType) {
+                        ParameterizedType thisT = (ParameterizedType) firstT;
+                        firstType = (Class<?>) thisT.getRawType();
+                    }
+                    else {
+                        errorAdder.accept(new Exception("invalid List contents for service reference. Don't understand " + firstT));
+                    }
+                    if (firstType != null) {
+                        // Use a tracker for this type.
+                        toTrack = firstType;
+                        mapper = (a) -> a.getServiceList();
+                    }
                 }
                 else {
                     errorAdder.accept(new Exception("only List<?> or its supertypes may be used for "
