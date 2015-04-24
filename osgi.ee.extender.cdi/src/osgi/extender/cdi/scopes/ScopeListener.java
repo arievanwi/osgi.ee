@@ -120,9 +120,12 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
                 (c) -> {c.add(request); c.setCurrent(request);});
         doWithContext(context, SessionScoped.class, 
                 (c) -> c.setCurrent(session));
+        // Check if it is a new view. Note that isNewViewMatch is not
+        // stateless and as such we call it only once and not in the lambda.
+        final boolean isNewView = isNewViewMatch(request);
         doWithContext(context, ViewScoped.class, 
                 (c) -> {
-                    if (isNewViewMatch(request)) {
+                    if (isNewView) {
                         c.remove(session);
                         c.add(session); 
                     }
