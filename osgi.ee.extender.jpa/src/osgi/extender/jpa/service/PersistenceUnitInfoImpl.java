@@ -45,6 +45,8 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
     private PersistenceUnitDefinition definition;
     private Bundle unitBundle;
     private ClassLoader ppClassLoader;
+    private DataSource nonJtaDataSource;
+    private DataSource jtaDataSource;
     
     /**
      * Construct a persistence unit information object.
@@ -87,8 +89,11 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
     }
 
     @Override
-    public DataSource getJtaDataSource() {
-        return this.getFromDefinition(definition.jtaDs);
+    public synchronized DataSource getJtaDataSource() {
+        if (jtaDataSource == null) {
+            jtaDataSource = this.getFromDefinition(definition.jtaDs);
+        }
+        return jtaDataSource;
     }
 
     @Override
@@ -110,8 +115,11 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
     }
 
     @Override
-    public DataSource getNonJtaDataSource() {
-        return getFromDefinition(definition.nonJtaDs);
+    public synchronized DataSource getNonJtaDataSource() {
+        if (nonJtaDataSource == null) {
+            nonJtaDataSource =  getFromDefinition(definition.nonJtaDs);
+        }
+        return nonJtaDataSource;
     }
 
     @Override
