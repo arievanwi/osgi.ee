@@ -17,6 +17,7 @@
 package osgi.extender.jpa.emf;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import javax.persistence.EntityManager;
@@ -57,17 +58,17 @@ class EntityProxyInvocationHandler implements InvocationHandler {
         if (methodName.equals("getTransaction")) {
             throw new RuntimeException("(bugcheck): transactions are automatically managed");
         }
-        if (methodName.equals("equals") || methodName.equals("hashCode")) {
-            return method.invoke(proxy, args);
-        }
-        // Normal entity manager method.
         EntityManager manager = local.get();
         if (manager == null) {
             manager = factory.createEntityManager();
             registerEntityManager(manager, local, transactionManager);
             local.set(manager);
         }
-        return method.invoke(manager, args);
+        try {
+            return method.invoke(manager, args);
+        } catch (InvocationTargetException exc) {
+            throw exc.getCause();
+        }
     }
     
     /**
