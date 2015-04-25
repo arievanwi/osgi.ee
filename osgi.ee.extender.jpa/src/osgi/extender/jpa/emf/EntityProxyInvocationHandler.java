@@ -52,11 +52,40 @@ class EntityProxyInvocationHandler implements InvocationHandler {
         this.transactionManager = m;
     }
     
+    /**
+     * Handle some well known methods that are known to cause race conditions during framework
+     * shutdown and startup. 
+     * 
+     * @param proxy The proxy
+     * @param method The method invoked on the proxy
+     * @param args The arguments to the method invocation
+     * @return The return of the action, if handled. Otherwise null
+     */
+    private Object handleWellKnownMethods(Object proxy, Method method, Object[] args) {
+        if ("hashCode".equals(method.getName())) {
+            return factory.hashCode();
+        }
+        if ("equals".equals(method.getName())) {
+            Object firstArg = args[0];
+            if (proxy == firstArg) 
+                return true;
+            return false;
+        }
+        if ("toString".equals(method.getName())) {
+            return "Proxy for EntityManager of " + factory;
+        }
+        return null;
+    }
+    
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         String methodName = method.getName();
         if (methodName.equals("getTransaction")) {
             throw new RuntimeException("(bugcheck): transactions are automatically managed");
+        }
+        Object toReturn = handleWellKnownMethods(proxy, method, args);
+        if (toReturn != null) {
+            return toReturn;
         }
         EntityManager manager = local.get();
         if (manager == null) {
