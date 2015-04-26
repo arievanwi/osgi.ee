@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="osgi.extender.jta.impl.UserTransactionImpl">
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" immediate="true" name="osgi.extender.jta.impl.UserTransactionImpl">
    <implementation class="osgi.extender.jta.impl.UserTransactionImpl"/>
    <service>
       <provide interface="javax.transaction.UserTransaction"/>

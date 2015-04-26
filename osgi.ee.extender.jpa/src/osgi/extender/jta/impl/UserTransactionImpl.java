@@ -32,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  * User transaction implementation. Simple component to delegate things to 
  * the transaction manager service.  
  */
-@Component
+@Component(immediate = true)
 public class UserTransactionImpl implements UserTransaction {
     private TransactionManager manager;
     
