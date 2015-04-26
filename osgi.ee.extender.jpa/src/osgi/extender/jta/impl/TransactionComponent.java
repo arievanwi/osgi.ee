@@ -16,58 +16,62 @@
  */
 package osgi.extender.jta.impl;
 
-import java.util.Hashtable;
-import java.util.Map;
+import java.util.Dictionary;
 
 import javax.transaction.TransactionManager;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.cm.ManagedService;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 
 /**
- * Component that starts the transaction manager if told so. It accepts a configuration to specify the rank
- * of the service. If this rank is lower than -1000, the service is not started.
+ * Component that starts the transaction manager, which is does by default unless a system property 
+ * is set to disable it. The timeout can be configured via the configuration manager, but has a default
+ * value in absence of a configuration manager.
  * 
  * @author Arie van Wijngaarden
  */
-@Component(configurationPid = "osgi.extender.jta.tm", configurationPolicy = ConfigurationPolicy.OPTIONAL)
-public class TransactionComponent {
+@Component(property = Constants.SERVICE_PID + "=" + TransactionComponent.PID, immediate = true)
+public class TransactionComponent implements ManagedService {
+    static final String PID = "osgi.extender.jta.tm";
     private TransactionManagerImpl transactionManager;
     private ServiceRegistration<TransactionManager> registration;
     
     @Activate
-    void activate(BundleContext context, Map<String, Object> properties) {
-        int rank = 0;
-        int time = 10;
-        if (properties != null) {
-            Object value = properties.get(Constants.SERVICE_RANKING);
-            if (value != null) {
-                rank = Integer.parseInt(value.toString());
-            }
-            value = properties.get("timeout");
-            if (value != null) {
-                time = Integer.parseInt(value.toString());
-            }
+    synchronized void activate(BundleContext context) {
+        String activate = System.getProperty(PID);
+        if (activate == null || Boolean.parseBoolean(activate)) {
+            int time = 30;
+            transactionManager = new TransactionManagerImpl(time);
+            registration = context.registerService(TransactionManager.class, transactionManager, null);
         }
-        if (rank < -1000) return;
-        transactionManager = new TransactionManagerImpl(time);
-        Hashtable<String, Object> dict = new Hashtable<>();
-        dict.put(Constants.SERVICE_RANKING, rank);
-        registration = context.registerService(TransactionManager.class, transactionManager, dict);
     }
     
     @Deactivate
-    void deactivate() {
+    synchronized void deactivate() {
         if (transactionManager != null) {
             try {
                 registration.unregister();
             } catch (Exception exc) {}
             transactionManager.destroy();
+        }
+    }
+
+    @Override
+    public synchronized void updated(Dictionary<String, ?> dict) {
+        if (dict == null || transactionManager == null) return;
+        Object timer = dict.get(PID);
+        if (timer != null) {
+            int timeout = Integer.parseInt(timer.toString());
+            try {
+                transactionManager.setTransactionTimeout(timeout);
+            } catch (Exception exc) {
+                exc.printStackTrace();
+            }
         }
     }
 }

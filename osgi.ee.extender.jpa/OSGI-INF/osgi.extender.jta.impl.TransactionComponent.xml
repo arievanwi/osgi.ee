@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.2.0" activate="activate" configuration-pid="osgi.extender.jta.tm" configuration-policy="optional" deactivate="deactivate" name="osgi.extender.jta.impl.TransactionComponent">
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" activate="activate" deactivate="deactivate" immediate="true" name="osgi.extender.jta.impl.TransactionComponent">
    <implementation class="osgi.extender.jta.impl.TransactionComponent"/>
+   <service>
+      <provide interface="org.osgi.service.cm.ManagedService"/>
+   </service>
+   <property name="service.pid" value="osgi.extender.jta.tm"/>
 </scr:component>
