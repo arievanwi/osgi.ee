@@ -18,22 +18,29 @@ package osgi.cdi.faces;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import javax.el.CompositeELResolver;
 import javax.el.ELResolver;
 import javax.el.ExpressionFactory;
 import javax.enterprise.inject.spi.BeanManager;
+import javax.faces.FacesException;
 import javax.faces.application.Application;
 import javax.faces.application.ApplicationWrapper;
 import javax.faces.application.ResourceHandler;
 import javax.faces.context.FacesContext;
+import javax.faces.validator.Validator;
 import javax.servlet.ServletContext;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
+
 
 /**
  * Application wrapper. Wraps another application and performs some special actions on the faces
@@ -45,6 +52,7 @@ import org.osgi.util.tracker.ServiceTracker;
 class CdiApplication extends ApplicationWrapper {
     private Application delegate;
     private ServiceTracker<BeanManager, BeanManager> beanManagerTracker;
+    private ServiceTracker<Validator, Validator> validators;
     
     /**
      * Create a new wrapped application for this instance.
@@ -77,28 +85,42 @@ class CdiApplication extends ApplicationWrapper {
     }
     
     /**
+     * Check, and if needed, construct a service tracker for a specific object given a specific filter.
+     * 
+     * @param current The current service tracker provider. May result to a null value
+     * @param clz The tracker class
+     * @param setter The setter to store the tracker back
+     */
+    private static <T> void check(Supplier<ServiceTracker<T, T>> current, Class<T> clz, 
+            Consumer<ServiceTracker<T, T>> setter) {
+        ServiceTracker<T, T> thisTracker = current.get();
+        if (thisTracker == null) {
+            final BundleContext bundleContext = context();
+            if (bundleContext != null) {
+                String filterSpec = getFilter();
+                String filter = "(" + Constants.OBJECTCLASS + "=" + clz.getName() + ")";
+                if (filterSpec != null) {
+                    filter = "(&" + filter + filterSpec + ")";
+                }
+                try {
+                    thisTracker = new ServiceTracker<>(bundleContext, 
+                            FrameworkUtil.createFilter(filter), null);
+                    thisTracker.open();
+                } catch (Exception exc) {
+                    exc.printStackTrace();
+                }
+                setter.accept(thisTracker);
+            }
+        }
+    }
+    
+    /**
      * Perform a check on the set-up. Since during construction of this application we don't know anything about
      * the bean managers and resource handlers (since the faces context may not even be created), we need to 
      * perform this checking at the specific overrides.
      */
     private synchronized void check() {
-        if (beanManagerTracker == null) {
-            final BundleContext bundleContext = context();
-            if (bundleContext != null) {
-                String filterSpec = getFilter();
-                String filter = "(" + Constants.OBJECTCLASS + "=" + BeanManager.class.getName() + ")";
-                if (filterSpec != null) {
-                    filter = "(&" + filter + filterSpec + ")";
-                }
-                try {
-                    beanManagerTracker = new ServiceTracker<>(bundleContext, 
-                            FrameworkUtil.createFilter(filter), null);
-                    beanManagerTracker.open();
-                } catch (Exception exc) {
-                    exc.printStackTrace();
-                }
-            }
-        }
+        check(() -> beanManagerTracker, BeanManager.class, (a) -> beanManagerTracker = a);
     }
     
     /**
@@ -146,6 +168,26 @@ class CdiApplication extends ApplicationWrapper {
             exc.printStackTrace();
             return delegate.getResourceHandler();
         }
+    }
+
+    
+    @Override
+    public Validator createValidator(String name) throws FacesException {
+        synchronized (this) {
+            check(() -> validators, Validator.class, (v) -> validators = v);
+            if (validators != null) {
+                // Try to find the validator by name.
+                Map<ServiceReference<Validator>, Validator> found = validators.getTracked();
+                Optional<Validator> v = found.entrySet().stream()
+                        .filter((e) -> name.equals(e.getKey().getProperty("validator.id")))
+                        .map((e) -> e.getValue())
+                        .findAny();
+                if (v.isPresent()) {
+                    return v.get();
+                }
+            }
+        }
+        return super.createValidator(name);
     }
 
     @Override
