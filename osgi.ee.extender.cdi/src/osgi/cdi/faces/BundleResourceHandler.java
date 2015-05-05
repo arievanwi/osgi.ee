@@ -87,8 +87,16 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
             map((rp) -> rp.getResource(path, resource)).
             filter((r) -> r != null).
             collect(Collectors.toList());
-        if (ress.size() == 0) return null;
-        return ress.get(0);
+        // If found, return.
+        if (ress.size() > 0) return ress.get(0);
+        // If no further searching possible, end.
+        if (path == null) return null;
+        // Check if there is another grouping to be done.
+        int index = path.indexOf("/");
+        if (index < 0) {
+            return getResource(null, path + "/" + resource);
+        }
+        return getResource(path.substring(0, index), path.substring(index + 1) + "/" + resource);
     }
     
     /**
