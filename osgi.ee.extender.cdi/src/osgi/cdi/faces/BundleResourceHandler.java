@@ -201,8 +201,6 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
 
     @Override
     public boolean libraryExists(String exists) {
-        if (delegate.libraryExists(exists)) return true;
-        return tracker.getTracked().values().stream().
-            anyMatch((tp) -> tp.getResources(exists) != null);
+        return true;  // We don't check, just assume it is there.
     }
 }
