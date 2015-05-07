@@ -1,6 +1,5 @@
 /*
- * Copyright 2015, Imtech Traffic & Infra
- * Copyright 2015, aVineas IT Consulting
+ * Copyright 2014, aVineas IT Consulting
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +25,11 @@ import java.lang.annotation.Target;
 import javax.enterprise.context.NormalScope;
 
 /**
- * Component scope: a new normal scope that differs from the others that beans for this
+ * Component scope: a new normal scope that differs from the others so beans for this
  * scope are automatically created during construction of the CDI container and can 
  * be compared to OSGi SCR components. Note that it is not needed to create component
- * scope CDI beans that are also marked as service, since these will be created during startup anyway.
+ * scope CDI beans that are also marked as service, since these will be created during 
+ * startup anyway.
  * 
  * @author Arie van Wijngaarden
  */

@@ -27,7 +27,8 @@ import javax.enterprise.context.NormalScope;
 
 /**
  * View scope. Scope that remains active as long as the page does not move, meaning: the
- * base requested URL remains the same.
+ * base requested URL remains the same. Can be compared to the JSF view scope, but
+ * is totally independent of JSF.
  * 
  * @author Arie van Wijngaarden
  */

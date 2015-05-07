@@ -1,6 +1,5 @@
 /*
- * Copyright 2015, Imtech Traffic & Infra
- * Copyright 2015, aVineas IT Consulting
+ * Copyright 2014, aVineas IT Consulting
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +32,7 @@ import osgi.cdi.annotation.Service;
 
 /**
  * Helper functionality for registration of exported beans. Performs the action related to 
- * exporting the beans that are marked as such.
+ * exporting the beans that are marked as such. Static methods only.
  * 
  * @author Arie van Wijngaarden 
  */

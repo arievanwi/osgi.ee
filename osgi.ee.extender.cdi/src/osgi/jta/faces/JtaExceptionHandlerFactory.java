@@ -27,6 +27,7 @@ import javax.servlet.ServletContext;
 import javax.transaction.TransactionManager;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
@@ -46,6 +47,9 @@ public class JtaExceptionHandlerFactory extends ExceptionHandlerFactory {
         if (tracker == null) {
             ServletContext context = (ServletContext) FacesContext.getCurrentInstance().getExternalContext().getContext();
             BundleContext ctx = (BundleContext) context.getAttribute("osgi-bundlecontext");
+            if (ctx == null) {
+                ctx = FrameworkUtil.getBundle(getClass()).getBundleContext();
+            }
             tracker = new ServiceTracker<>(ctx, TransactionManager.class, null);
             tracker.open();
         }
