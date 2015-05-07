@@ -24,6 +24,8 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 
@@ -202,6 +204,7 @@ class Wrapper<T> implements InvocationHandler {
 class Customizer<T> implements ServiceTrackerCustomizer<T, T> {
     private List<T> services;
     private BundleContext context;
+    private Map<ServiceReference<T>, T> tracked = new TreeMap<>();
     
     Customizer(BundleContext context, List<T> services) {
         this.services = services;
@@ -213,7 +216,9 @@ class Customizer<T> implements ServiceTrackerCustomizer<T, T> {
         T obj = context.getService(ref);
         if (obj != null) {
             synchronized (services) {
-                services.add(obj);
+                tracked.put(ref,  obj);
+                services.clear();
+                services.addAll(tracked.values());
                 services.notifyAll();
             }
         }
@@ -226,6 +231,7 @@ class Customizer<T> implements ServiceTrackerCustomizer<T, T> {
     public void removedService(ServiceReference<T> sr, T obj) {
         context.ungetService(sr);
         synchronized (services) {
+            tracked.remove(sr);
             services.remove(obj);
         }
     }
