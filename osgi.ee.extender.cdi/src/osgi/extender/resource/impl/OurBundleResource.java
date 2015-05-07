@@ -20,7 +20,6 @@ import java.io.InputStream;
 import java.net.URL;
 
 import org.osgi.framework.Bundle;
-import org.osgi.framework.wiring.BundleWiring;
 
 import osgi.extender.resource.BundleResource;
 
@@ -43,6 +42,11 @@ class OurBundleResource implements BundleResource {
 
     @Override
     public InputStream getInputStream() {
-        return bundle.adapt(BundleWiring.class).getClassLoader().getResourceAsStream(path);
+        try {
+            return getURL().openStream();
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
+        return null;
     }
 }
