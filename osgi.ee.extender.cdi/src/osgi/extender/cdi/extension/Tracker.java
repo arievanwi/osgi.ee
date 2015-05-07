@@ -217,8 +217,10 @@ class Customizer<T> implements ServiceTrackerCustomizer<T, T> {
         if (obj != null) {
             synchronized (services) {
                 tracked.put(ref,  obj);
+                // Since tracked is sorted in ascending order, we need to revert the
+                // order to match the OSGi default.
                 services.clear();
-                services.addAll(tracked.values());
+                tracked.values().stream().forEach((s) -> services.add(0, s));
                 services.notifyAll();
             }
         }
