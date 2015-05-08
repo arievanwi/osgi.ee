@@ -233,6 +233,7 @@ public class ServiceExtension implements Extension {
     public void afterBeanDiscovery(@Observes AfterBeanDiscovery event) {
         // Add the beans that satisfy the @ServiceReference injection points
         this.beans.stream().forEach((b) -> event.addBean(b));
+        event.addBean(new BundleContextBean(context));
     }
     
     /**
