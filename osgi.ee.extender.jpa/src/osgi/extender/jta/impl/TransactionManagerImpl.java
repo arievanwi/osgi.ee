@@ -93,10 +93,7 @@ class TransactionManagerImpl implements TransactionManager {
 
     @Override
     public void rollback() {
-        TransactionImpl impl = _getTransaction(false);
-        if (impl != null) {
-            impl.rollback();
-        }
+        _getTransaction(true).rollback();
         remove();
     }
 
