@@ -154,6 +154,10 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
                     return headers;
                 }
                 @Override
+                public String getContentType() {
+                    return FacesContext.getCurrentInstance().getExternalContext().getMimeType(getResourceName());
+                }
+                @Override
                 public URL getURL() {
                     return thisResource.getURL();
                 }
