@@ -39,7 +39,12 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 import org.osgi.util.tracker.ServiceTracker;
 
 /**
- * Listener for bundle changes that result in an entity manager factory to be created.
+ * Listener for bundle changes that result in an entity manager factory to be created. It actually
+ * listens for two parts: a persistence provider listener and a bundle listener. Both may end up
+ * in the creation or destruction of persistence units. 
+ * 
+ * Synchronization requirements: the bundles tracked are synchronized on the listener itself, information for
+ * a persistence unit context is synchronized on the context object. 
  */
 public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,  PPListener {
     private Map<Bundle, List<Context>> bundles;
@@ -58,22 +63,30 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
         PersistenceUnitInfo info = PersistenceUnitProcessor.getPersistenceUnitInfo(bundle, 
                 context.definition, pp.getValue());
         context.factory = PersistenceUnitProcessor.createFactory(pp.getValue(), info);
+        context.usedProvider = pp.getKey();
         Hashtable<String, Object> props = new Hashtable<>();
         props.put(EntityManagerFactoryBuilder.JPA_UNIT_NAME, context.definition.name);
         props.put(PersistenceUnitTransactionType.class.getName(), info.getTransactionType().name());
-        context.registration = bundle.getBundleContext().registerService(
-                EntityManagerFactory.class, context.factory, props);
-        context.usedProvider = pp.getKey();
+        // Do the registration of the service asynchronously. Since it may imply all kinds of
+        // listening actions performed as a result of it, it may block the bundle handling.
+        new Thread(() -> { 
+            synchronized (context) {
+                context.registration = bundle.getBundleContext().registerService(
+                        EntityManagerFactory.class, context.factory, props);
+            }
+        }).start();
     }
         
     private static void destroy(Context context) {
-        context.factory.close();
-        try {
-            context.registration.unregister();
-        } catch (Exception exc) {}
-        context.factory = null;
-        context.registration = null;
-        context.usedProvider = null;
+        synchronized (context) {
+            context.factory.close();
+            context.factory = null;
+            try {
+                context.registration.unregister();
+            } catch (Exception exc) {}
+            context.registration = null;
+            context.usedProvider = null;
+        }
     }
     
     private synchronized void addRegistration(Bundle bundle) {
