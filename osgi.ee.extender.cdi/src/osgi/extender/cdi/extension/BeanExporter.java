@@ -76,19 +76,70 @@ class BeanExporter {
     
     /**
      * Get the service properties from a service definition. The method parses the properties
-     * defined and translates them into a dictionary that can be set on a service.
+     * defined and translates them into a dictionary that can be set on a service. The conversion
+     * follows the specification of the Declarative Services specification, meaning that it
+     * is possible to add the type like "foo:Integer=1". See compendium 5 specification 112.4.6.
      * 
      * @param service The service annotation to extract the properties from
      * @return A dictionary with the service properties to be used during registration
      */
-    static Dictionary<String, String> getProperties(Service service) {
-        final Hashtable<String, String> props = new Hashtable<>();
+    static Dictionary<String, Object> getProperties(Service service) {
+        final Hashtable<String, Object> props = new Hashtable<>();
         // Parse them.
         Arrays.asList(service.properties()).stream().forEach((s) -> {
             String[] splitted = s.split("=");
             if (splitted.length != 2 || splitted[0].trim().length() == 0 || splitted[1].trim().length() == 0) 
                 throw new RuntimeException("invalid property for @Service: " + s);
-            props.put(splitted[0].trim(), splitted[1].trim());
+            String stringValue = splitted[1].trim();
+            String propAndOptionalType = splitted[0].trim();
+            // Check for type conversion.
+            String[] propAndType = propAndOptionalType.split(":");
+            String propertyName = propAndType[0].trim();
+            Object value;
+            if (propAndType.length == 1) {
+                // String type, default.
+                value = stringValue;
+            }
+            else {
+                // Conversion needed.
+                String type = propAndType[1].trim();
+                try {
+                    if ("String".equals(type)) {
+                        value = stringValue;
+                    }
+                    else if ("Double".equals(type)) {
+                        value = Double.valueOf(stringValue);
+                    }
+                    else if ("Integer".equals(type)) {
+                        value = Integer.valueOf(stringValue);
+                    }
+                    else if ("Long".equals(type)) {
+                        value = Long.valueOf(stringValue);
+                    }
+                    else if ("Float".equals(type)) {
+                        value = Float.valueOf(stringValue);
+                    }
+                    else if ("Byte".equals(type)) {
+                        value = Byte.valueOf(stringValue);
+                    }
+                    else if ("Boolean".equals(type)) {
+                        value = Boolean.valueOf(stringValue);
+                    }
+                    else if ("Short".equals(type)) {
+                        value = Short.valueOf(stringValue);
+                    }
+                    else if ("Character".equals(type)) {
+                        Integer c = Integer.valueOf(stringValue);
+                        value = new Character(Character.toChars(c)[0]);
+                    }
+                    else {
+                        throw new RuntimeException("type \"" + type + "\" is an unknown conversion type");
+                    }
+                } catch (Exception exc) {
+                    throw new RuntimeException("cannot convert service property \"" + propertyName + "\" for " + service, exc);
+                }
+            }
+            props.put(propertyName, value);
         });
         return props;
     }
