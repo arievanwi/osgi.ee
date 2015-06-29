@@ -35,21 +35,20 @@ class ResourceLocalSynchronization implements Synchronization {
 
     @Override
     public void afterCompletion(int status) {
-        try {
-            if (status == Status.STATUS_ROLLING_BACK || status == Status.STATUS_MARKED_ROLLBACK || 
-                status == Status.STATUS_ROLLEDBACK) {
-                trans.rollback();
-            }
-            else {
-                trans.commit();
-            }
-            EntityManager manager = local.get();
+        EntityManager manager = local.get();
+        if (status == Status.STATUS_ROLLING_BACK || status == Status.STATUS_MARKED_ROLLBACK || 
+            status == Status.STATUS_ROLLEDBACK) {
+            trans.rollback();
+        }
+        else {
             if (manager != null) {
-                manager.close();
-                local.remove();
+                manager.flush();
             }
-        } catch (Exception exc) {
-            exc.printStackTrace();
+            trans.commit();
+        }
+        if (manager != null) {
+            manager.close();
+            local.remove();
         }
     }
 

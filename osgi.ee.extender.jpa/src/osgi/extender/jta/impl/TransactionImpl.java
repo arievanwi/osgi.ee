@@ -20,8 +20,10 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.transaction.HeuristicMixedException;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
+import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -85,26 +87,36 @@ public class TransactionImpl implements Transaction {
     }
     
     @Override
-    public void rollback() {
+    public void rollback() throws SystemException {
         setStatus(Status.STATUS_ROLLING_BACK);
-        toSync.stream().forEach((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
-        resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0)));
-        resources.stream().forEach((r) -> doWith(r, (rr) -> rr.rollback(xid)));
-        toSync.stream().forEach((s) ->  doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_ROLLEDBACK)));
+        try {
+            toSync.stream().forEach((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
+            resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0)));
+            resources.stream().forEach((r) -> doWith(r, (rr) -> rr.rollback(xid)));
+            toSync.stream().forEach((s) ->  doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_ROLLEDBACK)));
+        } catch (Exception exc) {
+            exc.printStackTrace();
+            throw new SystemException(exc.getMessage());
+        }
     }
     
     @Override
-    public void commit() {
+    public void commit() throws HeuristicMixedException, SystemException {
         if (status == Status.STATUS_MARKED_ROLLBACK) {
             rollback();
         }
         else {
             setStatus(Status.STATUS_COMMITTING);
-            toSync.stream().forEach((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
-            resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0)));
-            resources.stream().forEach((r) -> doWith(r, (rr) -> rr.prepare(xid)));
-            resources.stream().forEach((r) -> doWith(r, (rr) -> rr.commit(xid, true)));
-            toSync.stream().forEach((s) ->  doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED)));
+            try {
+                toSync.stream().forEach((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
+                resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0)));
+                resources.stream().forEach((r) -> doWith(r, (rr) -> rr.prepare(xid)));
+                resources.stream().forEach((r) -> doWith(r, (rr) -> rr.commit(xid, true)));
+                toSync.stream().forEach((s) ->  doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED)));
+            } catch (Exception exc) {
+                exc.printStackTrace();
+                throw new HeuristicMixedException(exc.getMessage());
+            }
         }
     }
 

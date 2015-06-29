@@ -23,6 +23,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.stream.Collectors;
 
+import javax.transaction.HeuristicMixedException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
@@ -60,7 +61,7 @@ class TransactionManagerImpl implements TransactionManager {
     }
     
     @Override
-    public void commit() {
+    public void commit() throws HeuristicMixedException, SystemException {
         _getTransaction(true).commit();
         remove();
     }
@@ -92,9 +93,12 @@ class TransactionManagerImpl implements TransactionManager {
     }
 
     @Override
-    public void rollback() {
-        _getTransaction(true).rollback();
-        remove();
+    public void rollback() throws SystemException {
+        try {
+            _getTransaction(true).rollback();
+        } finally {
+            remove();
+        }
     }
 
     @Override
@@ -115,7 +119,10 @@ class TransactionManagerImpl implements TransactionManager {
                             collect(Collectors.toList());
                     overdues.stream().forEach((e) -> {
                         transactions.remove(e.getKey());
-                        e.getValue().rollback();
+                        try {
+                            e.getValue().rollback();
+                        } catch (Exception exc) {
+                        }
                     });
                 }
             }

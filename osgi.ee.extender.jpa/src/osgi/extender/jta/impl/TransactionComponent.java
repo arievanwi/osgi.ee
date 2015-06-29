@@ -29,9 +29,10 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 
 /**
- * Component that starts the transaction manager, which is does by default unless a system property 
- * is set to disable it. The timeout can be configured via the configuration manager, but has a default
- * value in absence of a configuration manager.
+ * Component that starts the transaction manager, which is does by default
+ * unless a system property is set to disable it. The timeout can be configured
+ * via the configuration manager, but has a default value in absence of a
+ * configuration manager.
  * 
  * @author Arie van Wijngaarden
  */
@@ -40,31 +41,34 @@ public class TransactionComponent implements ManagedService {
     static final String PID = "osgi.extender.jta.tm";
     private TransactionManagerImpl transactionManager;
     private ServiceRegistration<TransactionManager> registration;
-    
+
     @Activate
     synchronized void activate(BundleContext context) {
         String activate = System.getProperty(PID);
         if (activate == null || Boolean.parseBoolean(activate)) {
             int time = 30;
             transactionManager = new TransactionManagerImpl(time);
-            registration = context.registerService(TransactionManager.class, transactionManager, null);
+            registration = context.registerService(TransactionManager.class,
+                    transactionManager, null);
         }
     }
-    
+
     @Deactivate
     synchronized void deactivate() {
         if (transactionManager != null) {
             try {
                 registration.unregister();
-            } catch (Exception exc) {}
+            } catch (Exception exc) {
+            }
             transactionManager.destroy();
         }
     }
 
     @Override
     public synchronized void updated(Dictionary<String, ?> dict) {
-        if (dict == null || transactionManager == null) return;
-        Object timer = dict.get(PID);
+        if (dict == null || transactionManager == null)
+            return;
+        Object timer = dict.get("timeout");
         if (timer != null) {
             int timeout = Integer.parseInt(timer.toString());
             try {
