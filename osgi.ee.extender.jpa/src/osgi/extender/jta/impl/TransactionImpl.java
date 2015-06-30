@@ -52,7 +52,7 @@ public class TransactionImpl implements Transaction {
         try {
             res.end(xid, (status == Status.STATUS_MARKED_ROLLBACK) ? XAResource.TMFAIL : XAResource.TMSUCCESS);
         } catch (Exception exc) {
-            exc.printStackTrace();
+            throw new RuntimeException(exc);
         }
         return true;
     }
@@ -63,7 +63,7 @@ public class TransactionImpl implements Transaction {
         try {
             res.start(xid, 0);
         } catch (Exception exc) {
-            exc.printStackTrace();
+            throw new RuntimeException(exc);
         }
         return true;
     }
@@ -82,7 +82,7 @@ public class TransactionImpl implements Transaction {
         try {
             cons.accept(t);
         } catch (Exception exc) {
-            exc.printStackTrace();
+            throw new RuntimeException(exc);
         }
     }
     
