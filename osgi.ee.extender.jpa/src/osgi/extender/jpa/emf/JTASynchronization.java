@@ -17,6 +17,7 @@
 package osgi.extender.jpa.emf;
 
 import javax.persistence.EntityManager;
+import javax.transaction.Status;
 import javax.transaction.Synchronization;
 
 /**
@@ -34,8 +35,10 @@ class JTASynchronization implements Synchronization {
         EntityManager manager = local.get();
         if (manager != null) {
             try {
-                // Somehow the data is not flushed to the database in JTA mode. Needs to be done.
-                manager.flush();
+                if (status == Status.STATUS_COMMITTED || status == Status.STATUS_COMMITTING) {
+                    // Somehow the data is not flushed to the database in JTA mode. Needs to be done.
+                    manager.flush();
+                }
                 // Cache remains dirty as well. For now, just refresh the lot.
                 manager.getEntityManagerFactory().getCache().evictAll();
                 manager.close();
