@@ -33,12 +33,15 @@ class JTASynchronization implements Synchronization {
     public void afterCompletion(int status) {
         EntityManager manager = local.get();
         if (manager != null) {
-            // Somehow the data is not flushed to the database in JTA mode. Needs to be done.
-            manager.flush();
-            // Cache remains dirty as well. For now, just refresh the lot.
-            manager.getEntityManagerFactory().getCache().evictAll();
-            manager.close();
-            local.remove();
+            try {
+                // Somehow the data is not flushed to the database in JTA mode. Needs to be done.
+                manager.flush();
+                // Cache remains dirty as well. For now, just refresh the lot.
+                manager.getEntityManagerFactory().getCache().evictAll();
+                manager.close();
+            } finally {
+                local.remove();
+            }
         }
     }
 

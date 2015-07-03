@@ -36,18 +36,21 @@ class ResourceLocalSynchronization implements Synchronization {
     @Override
     public void afterCompletion(int status) {
         EntityManager manager = local.get();
-        if (status == Status.STATUS_ROLLING_BACK || status == Status.STATUS_MARKED_ROLLBACK || 
-            status == Status.STATUS_ROLLEDBACK) {
-            trans.rollback();
-        }
-        else {
-            if (manager != null) {
-                manager.flush();
+        try {
+            if (status == Status.STATUS_ROLLING_BACK || status == Status.STATUS_MARKED_ROLLBACK || 
+                status == Status.STATUS_ROLLEDBACK) {
+                trans.rollback();
             }
-            trans.commit();
-        }
-        if (manager != null) {
-            manager.close();
+            else {
+                if (manager != null) {
+                    manager.flush();
+                }
+                trans.commit();
+            }
+            if (manager != null) {
+                manager.close();
+            }
+        } finally {
             local.remove();
         }
     }
