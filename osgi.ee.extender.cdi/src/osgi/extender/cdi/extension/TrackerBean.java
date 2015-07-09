@@ -145,4 +145,9 @@ public class TrackerBean implements Bean<Object> {
             return false;
         }
     }
+    
+    @Override
+    public String toString() {
+        return "Service Tracker of: " + type + ", qualifiers: " + qualifiers;
+    }
 }
