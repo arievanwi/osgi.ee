@@ -37,7 +37,7 @@ public class ViewScopeViewHandler extends ViewHandlerWrapper {
 
     @Override
     public UIViewRoot createView(FacesContext fc, String page) {
-        // If the view is not being restored, but completely new, destroy the view scope.
+        // If the view is not being restored but completely new, destroy the view scope.
         HttpServletRequest request = (HttpServletRequest) fc.getExternalContext().getRequest();
         Boolean restoring = (Boolean) request.getAttribute(RESTORING);
         if (restoring == null || restoring == false) {
