@@ -29,6 +29,8 @@ import org.osgi.framework.wiring.BundleWire;
 import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.util.tracker.BundleTrackerCustomizer;
 
+import osgi.extender.cdi.Helper;
+
 /**
  * Bundle listener that takes care of starting and stopping the CDI container for specific bundles.
  * This is the main entry point for CDI container creation for bundles that are extended by this 

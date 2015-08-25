@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package osgi.extender.cdi.weld;
+package osgi.extender.cdi;
 
 import java.util.Collection;
 
@@ -24,8 +24,8 @@ import org.osgi.framework.wiring.BundleWiring;
 /**
  * Some helper methods.
  */
-class Helper {
-    static Class<?> loadClass(Collection<ClassLoader> loaders, String name) {
+public class Helper {
+    public static Class<?> loadClass(Collection<ClassLoader> loaders, String name) {
         Exception lastException = null;
         for (ClassLoader l : loaders) {
             try {
@@ -43,16 +43,16 @@ class Helper {
         }
         throw new RuntimeException("cannot load class \"" + name + "\"", lastException);
     }
-    
-    static BundleWiring getWiring(Bundle bundle) {
+
+    public static BundleWiring getWiring(Bundle bundle) {
         BundleWiring wire = bundle.adapt(BundleWiring.class);
         if (wire == null) {
             throw new RuntimeException("(bugcheck): no wiring returned for " + bundle);
         }
         return wire;
     }
-    
-    static ClassLoader getLoader(Bundle bundle) {
+
+    public static ClassLoader getLoader(Bundle bundle) {
         return getWiring(bundle).getClassLoader();
     }
 }

@@ -24,6 +24,9 @@ import java.util.stream.Collectors;
 import org.jboss.weld.serialization.spi.ProxyServices;
 import org.osgi.framework.Bundle;
 
+import osgi.extender.cdi.Helper;
+import osgi.extender.cdi.DelegatingClassLoader;
+
 /**
  * Proxy service handling for proxying beans. Basically, proxying is done using the combination
  * of the class loader from the bundle we are extending combined with the class loaders of the weld bundle(s).
@@ -49,7 +52,7 @@ class BundleProxyService implements ProxyServices {
 
     @Override
     public ClassLoader getClassLoader(Class<?> beanType) {
-        return new OurClassLoader(delegates);
+        return new DelegatingClassLoader(delegates);
     }
 
     @Override

@@ -14,20 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package osgi.extender.cdi.weld;
+package osgi.extender.cdi;
 
 import java.util.Collection;
 
 /**
  * Class loader that delegates to the helper for loading classes
  */
-class OurClassLoader extends ClassLoader {
+public class DelegatingClassLoader extends ClassLoader {
     private Collection<ClassLoader> delegates;
 
-    public OurClassLoader(Collection<ClassLoader> delegates) {
+    public DelegatingClassLoader(Collection<ClassLoader> delegates) {
         this.delegates = delegates;
     }
-    
+
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         try {

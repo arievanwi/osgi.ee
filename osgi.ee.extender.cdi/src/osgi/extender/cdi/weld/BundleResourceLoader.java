@@ -25,6 +25,8 @@ import java.util.Enumeration;
 import org.jboss.weld.resources.spi.ResourceLoader;
 import org.osgi.framework.Bundle;
 
+import osgi.extender.cdi.Helper;
+
 /**
  * Weld CDI resource loader implementation that loads resources from a bundle.
  */

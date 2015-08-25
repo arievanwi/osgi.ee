@@ -34,6 +34,8 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 import org.osgi.framework.wiring.BundleWiring;
 
+import osgi.extender.cdi.Helper;
+
 /**
  * Weld bean deployment archive for beans from a bundle. Is Weld specific, so see the Weld bootstrap
  * documentation about how a deployment archive is used. 

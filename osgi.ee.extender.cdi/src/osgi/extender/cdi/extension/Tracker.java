@@ -22,6 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -39,13 +40,16 @@ import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
+import osgi.extender.cdi.Helper;
+import osgi.extender.cdi.DelegatingClassLoader;
+
 /**
  * Tracker of a specific service type and filter. Takes care of various types that
  * are injected as objects, collections or arrays of a specific type. The tracker tracks all
  * services matching the filter specified in the @ServiceReference indication and returns
  * proxies for the object and collection variant that match the service. At runtime a correctly
  * filled instance is returned.
- * 
+ *
  * @author Arie van Wijngaarden
  */
 class Tracker<T> {
@@ -54,10 +58,10 @@ class Tracker<T> {
     private T proxy;
     private List<T> services;
     private long waitTime;
-    
+
     /**
      * Create a tracker for a specific object/filter combination.
-     * 
+     *
      * @param context The bundle context. Must be the context of the bundle we are extending
      * @param type The type of the service
      * @param subfilter The sub-filter for the service
@@ -66,11 +70,13 @@ class Tracker<T> {
      */
     Tracker(BundleContext context, Class<? extends T> type, String subfilter, long waitTime) throws InvalidSyntaxException {
         // Get the wiring.
-        BundleWiring wiring = context.getBundle().adapt(BundleWiring.class);
+        BundleWiring wiring = Helper.getWiring(context.getBundle());
         // Get the filter from the class and the subfilter
         Filter filter = getFilter(type, subfilter);
         // Create a new proxy for this type. This proxy is used if a normal object is referenced.
-        proxy = type.cast(Proxy.newProxyInstance(wiring.getClassLoader(), new Class<?>[]{type}, 
+        proxy = type.cast(Proxy.newProxyInstance(
+                new DelegatingClassLoader(Arrays.asList(wiring.getClassLoader(), type.getClassLoader())),
+                new Class<?>[]{type},
                 new Wrapper<>(this::_getService)));
         // Construct the container for the tracked services that is i.e. returned by the collections variant.
         this.services = new CopyOnWriteArrayList<>();
@@ -80,11 +86,11 @@ class Tracker<T> {
         tracker = new ServiceTracker<>(context, filter, new Customizer<>(context, this.services));
         tracker.open();
     }
-    
+
     /**
      * Get a list with services. The list returned is backed by the actual list
      * and therefore always matches the actual services present in the OSGi environment
-     * 
+     *
      * @return A list with services
      */
     List<T> getServiceList() {
@@ -103,11 +109,11 @@ class Tracker<T> {
             return Collections.unmodifiableList(services);
         }
     }
-    
+
     /**
      * Return the proxy that is the gateway to the first entry in the services
      * that are tracked by this tracker.
-     * 
+     *
      * @return The proxy
      */
     T getService() {
@@ -121,7 +127,7 @@ class Tracker<T> {
         }
         return getService(toWait);
     }
-    
+
     private T getService(long timeout) {
         try {
             return tracker.waitForService(timeout);
@@ -130,12 +136,12 @@ class Tracker<T> {
         }
         return trackedClass.cast(null);
     }
-    
+
     /**
      * Get the service as a snapshot array.
-     * 
+     *
      * @return An array with services. Note that this is, in contrast to the other
-     * variants, a snapshot taking state of the status of the available services. 
+     * variants, a snapshot taking state of the status of the available services.
      */
     T[] getServices() {
         List<T> serv = new ArrayList<>(getServiceList());
@@ -152,10 +158,10 @@ class Tracker<T> {
             tracker.close();
         } catch (Exception exc) {}
     }
-    
+
     /**
      * Construct a filter of a specific type with sub-filter.
-     * 
+     *
      * @param type The main class that is tracked
      * @param subfilter The sub filter
      * @return An OSGi filter instance to be used for service tracking
@@ -172,7 +178,7 @@ class Tracker<T> {
 
 /**
  * Wrapper that first executes a supplier to get the current state of a proxy
- * and then executes the method on that supplied value. 
+ * and then executes the method on that supplied value.
  */
 class Wrapper<T> implements InvocationHandler {
     private Supplier<T> supplier;
@@ -180,7 +186,7 @@ class Wrapper<T> implements InvocationHandler {
     Wrapper(Supplier<T> supplier) {
         this.supplier = supplier;
     }
-    
+
     @Override
     public Object invoke(Object proxy, Method method, Object[] args)
             throws Throwable {
@@ -205,12 +211,12 @@ class Customizer<T> implements ServiceTrackerCustomizer<T, T> {
     private List<T> services;
     private BundleContext context;
     private Map<ServiceReference<T>, T> tracked = new TreeMap<>();
-    
+
     Customizer(BundleContext context, List<T> services) {
         this.services = services;
         this.context = context;
     }
-    
+
     @Override
     public T addingService(ServiceReference<T> ref) {
         T obj = context.getService(ref);
@@ -238,3 +244,4 @@ class Customizer<T> implements ServiceTrackerCustomizer<T, T> {
         }
     }
 }
+
