@@ -7,4 +7,7 @@
       <application-factory>osgi.cdi.faces.CdiApplicationFactory</application-factory>
       <exception-handler-factory>osgi.jta.faces.JtaExceptionHandlerFactory</exception-handler-factory>
    </factory>
+   <application>
+     <view-handler>osgi.cdi.faces.ViewScopeViewHandler</view-handler>
+   </application>
 </faces-config>

@@ -40,37 +40,42 @@ import osgi.cdi.annotation.ViewScoped;
  * Listener for scope issues. Tracks sessions and requests and acts on registered services accordingly.
  * This listener should be registered with web applications as listener to make sure that
  * the various scopes are correctly set before CDI processing takes place.
- * 
+ *
  * @author Arie van Wijngaarden
  */
 public class ScopeListener implements ServletRequestListener, HttpSessionListener {
+    public static final String SCOPELISTENER = ScopeListener.class.getName() + ".instance";
     private static final String LASTVIEW = ScopeListener.class.getName() + ".lastView";
     private ServiceTracker<ExtenderContext, ExtenderContext> tracker;
-    
+
     private static boolean isNewViewMatch(HttpServletRequest request) {
         HttpSession session = request.getSession(true);
         String lastView = (String) session.getAttribute(LASTVIEW);
         String viewId = request.getPathInfo();
-        if (viewId == null) viewId = "";
+        if (viewId == null) {
+            viewId = "";
+        }
         if (lastView != null) {
             // Check if this view is the same.
-            if (lastView.equals(viewId)) 
+            if (lastView.equals(viewId)) {
                 return false;
+            }
             // Check whether we should skip this as a new view.
             String viewMatch = request.getServletContext().getInitParameter("osgi.extender.cdi.scopes.newview");
             if (viewMatch == null) {
                 viewMatch = ".*";
             }
-            if (!Pattern.matches(viewMatch, viewId)) 
+            if (!Pattern.matches(viewMatch, viewId)) {
                 return false;
+            }
         }
         session.setAttribute(LASTVIEW, viewId);
         return true;
     }
-    
+
     /**
      * Perform an action on all extender contexts that match a specific scope.
-     * 
+     *
      * @param context The servlet context. Needed to register a service tracker
      * @param scope The scope the action applies
      * @param consumer The consumer to execute on the found services
@@ -91,8 +96,8 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
         }
         // Stream: filter on the mentioned scope type and execute the consumer on it
         tracker.getTracked().values().stream().
-            filter((e) -> scope.equals(e.getScope())).
-            forEach(consumer); 
+        filter((e) -> scope.equals(e.getScope())).
+        forEach(consumer);
     }
 
     @Override
@@ -111,26 +116,38 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
         doWithContext(context, ViewScoped.class, (c) -> c.remove(session));
     }
 
-    @Override
-    public void requestInitialized(ServletRequestEvent event) {
-        HttpServletRequest request = (HttpServletRequest) event.getServletRequest();
+    /**
+     * Set the view scope for the current thread. This method is called during request initialization, but
+     * may also be called to reset the view scope from other parts using a reference to this instance via
+     * the appropriate request attribute.
+     *
+     * @param request The servlet request
+     * @param isNewView Indication whether a new view scope must be forced
+     */
+    public void setViewScope(HttpServletRequest request, boolean isNewView) {
         ServletContext context = request.getServletContext();
         HttpSession session = request.getSession(true);
-        doWithContext(context, RequestScoped.class, 
-                (c) -> {c.add(request); c.setCurrent(request);});
-        doWithContext(context, SessionScoped.class, 
-                (c) -> c.setCurrent(session));
-        // Check if it is a new view. Note that isNewViewMatch is not
-        // stateless and as such we call it only once and not in the lambda.
-        final boolean isNewView = isNewViewMatch(request);
-        doWithContext(context, ViewScoped.class, 
+        doWithContext(context, ViewScoped.class,
                 (c) -> {
                     if (isNewView) {
                         c.remove(session);
-                        c.add(session); 
+                        c.add(session);
                     }
                     c.setCurrent(session);
                 });
+    }
+
+    @Override
+    public void requestInitialized(ServletRequestEvent event) {
+        HttpServletRequest request = (HttpServletRequest) event.getServletRequest();
+        request.setAttribute(SCOPELISTENER, this);
+        ServletContext context = request.getServletContext();
+        HttpSession session = request.getSession(true);
+        doWithContext(context, RequestScoped.class,
+                (c) -> {c.add(request); c.setCurrent(request);});
+        doWithContext(context, SessionScoped.class,
+                (c) -> c.setCurrent(session));
+        setViewScope(request, isNewViewMatch(request));
     }
 
     @Override
