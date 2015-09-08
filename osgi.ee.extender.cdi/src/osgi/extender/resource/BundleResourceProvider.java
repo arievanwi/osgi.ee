@@ -33,11 +33,12 @@ public interface BundleResourceProvider {
      *
      * @param dir The logical directory. Specifies the location, etc. of a library that may be defined
      * for the bundle. Specify null (DEFAULT) for getting the default resources from the default directory
+     * @return A collection with found resources
      */
-    public Collection<BundleResource> getResources(String directory);
+    public Collection<BundleResource> getResources(String dir);
     /**
      * Get a bundle resource by name. This is a one-fetch operation to get one resource back.
-     * 
+     *
      * @param directory The logical directory on which the path resides
      * @param path The sub-path within the directory
      * @return The bundle resource or null if not found
