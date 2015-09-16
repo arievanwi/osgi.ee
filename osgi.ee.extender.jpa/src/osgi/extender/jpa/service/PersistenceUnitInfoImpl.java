@@ -59,6 +59,8 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
         this.unitBundle = wrapped;
         this.definition = definition;
         this.ppClassLoader = ppLoader;
+        this.jtaDataSource = this.getFromDefinition(definition.jtaDs);
+        this.nonJtaDataSource = getFromDefinition(definition.nonJtaDs);
     }
     
     @Override
@@ -90,9 +92,6 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
 
     @Override
     public synchronized DataSource getJtaDataSource() {
-        if (jtaDataSource == null) {
-            jtaDataSource = this.getFromDefinition(definition.jtaDs);
-        }
         return jtaDataSource;
     }
 
@@ -116,9 +115,6 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
 
     @Override
     public synchronized DataSource getNonJtaDataSource() {
-        if (nonJtaDataSource == null) {
-            nonJtaDataSource =  getFromDefinition(definition.nonJtaDs);
-        }
         return nonJtaDataSource;
     }
 
@@ -214,13 +210,14 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
             final ServiceTracker<DataSource, DataSource> tracker =
                     new ServiceTracker<>(unitBundle.getBundleContext(), FrameworkUtil.createFilter(filter), null);
             tracker.open();
+            tracker.waitForService(10000L);
 
             return (DataSource) Proxy.newProxyInstance(PersistenceUnitInfoImpl.this.getClassLoader(),
                     new Class<?>[] {DataSource.class},
                     new InvocationHandler() {
                         @Override
                         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-                            DataSource datasource = tracker.waitForService(1000L);
+                            DataSource datasource = tracker.waitForService(2000L);
                             if (datasource == null) {
                                 throw new RuntimeException("data source: " + def + " is not known as service");
                             }
