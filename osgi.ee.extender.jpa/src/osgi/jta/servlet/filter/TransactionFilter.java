@@ -19,6 +19,7 @@ package osgi.jta.servlet.filter;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -37,10 +38,28 @@ import org.osgi.util.tracker.ServiceTracker;
 public class TransactionFilter implements Filter {
     private ServiceTracker<TransactionManager, TransactionManager> tracker;
     
+    private TransactionManager getManager(ServletContext sc) {
+        if (tracker != null)
+            return tracker.getService();
+        BundleContext context = (BundleContext) sc.getAttribute("osgi-bundlecontext");
+        if (context == null) {
+            // Fall back in case we don't use a chapter 128 web extender.
+            context = FrameworkUtil.getBundle(getClass()).getBundleContext();
+        }
+        if (context == null) {
+            // May occur if the bundle containing this class is not yet started
+            // (but it soon will be).
+            return null;
+        }
+        tracker = new ServiceTracker<>(context, TransactionManager.class, null);
+        tracker.open();
+        return getManager(sc);
+    }
+
     @Override
     public void doFilter(ServletRequest request, ServletResponse response,
             FilterChain chain) throws ServletException {
-        TransactionManager manager = tracker.getService();
+        TransactionManager manager = getManager(request.getServletContext());
         try {
             if (manager != null)
                 manager.begin();
@@ -67,13 +86,7 @@ public class TransactionFilter implements Filter {
 
     @Override
     public void init(FilterConfig config) {
-        BundleContext context = (BundleContext) config.getServletContext().getAttribute("osgi-bundlecontext");
-        if (context == null) {
-            // Fall back in case we don't use a chapter 128 web extender.
-            context = FrameworkUtil.getBundle(getClass()).getBundleContext();
-        }
-        tracker = new ServiceTracker<>(context, TransactionManager.class, null);
-        tracker.open();
+        getManager(config.getServletContext());
     }
     
     @Override
