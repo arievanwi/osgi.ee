@@ -79,7 +79,8 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
         
     private static void destroy(Context context) {
         synchronized (context) {
-            context.factory.close();
+            if (context.factory != null)
+                context.factory.close();
             context.factory = null;
             try {
                 context.registration.unregister();
