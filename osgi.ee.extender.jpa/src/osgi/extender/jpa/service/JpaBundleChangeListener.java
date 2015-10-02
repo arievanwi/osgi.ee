@@ -41,46 +41,47 @@ import org.osgi.util.tracker.ServiceTracker;
 /**
  * Listener for bundle changes that result in an entity manager factory to be created. It actually
  * listens for two parts: a persistence provider listener and a bundle listener. Both may end up
- * in the creation or destruction of persistence units. 
- * 
+ * in the creation or destruction of persistence units.
+ *
  * Synchronization requirements: the bundles tracked are synchronized on the listener itself, information for
- * a persistence unit context is synchronized on the context object. 
+ * a persistence unit context is synchronized on the context object.
  */
 public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,  PPListener {
     private Map<Bundle, List<Context>> bundles;
     private ServiceTracker<PersistenceProvider, PersistenceProvider> tracker;
     private PPProvider provider;
-    
+
     public JpaBundleChangeListener(Bundle me) {
         bundles = new HashMap<>();
         PersistenceProviderListener listener = new PersistenceProviderListener(me.getBundleContext(), this);
         tracker = new ServiceTracker<>(me.getBundleContext(), PersistenceProvider.class, listener);
         provider = listener;
     }
-    
+
     private void create(Bundle bundle, Context context) {
         Map.Entry<String, PersistenceProvider> pp = provider.get(context.definition.provider);
-        PersistenceUnitInfo info = PersistenceUnitProcessor.getPersistenceUnitInfo(bundle, 
-                context.definition, pp.getValue());
-        context.factory = PersistenceUnitProcessor.createFactory(pp.getValue(), info);
-        context.usedProvider = pp.getKey();
-        Hashtable<String, Object> props = new Hashtable<>();
-        props.put(EntityManagerFactoryBuilder.JPA_UNIT_NAME, context.definition.name);
-        props.put(PersistenceUnitTransactionType.class.getName(), info.getTransactionType().name());
         // Do the registration of the service asynchronously. Since it may imply all kinds of
         // listening actions performed as a result of it, it may block the bundle handling.
-        new Thread(() -> { 
+        new Thread(() -> {
             synchronized (context) {
+                PersistenceUnitInfo info = PersistenceUnitProcessor.getPersistenceUnitInfo(bundle,
+                        context.definition, pp.getValue());
+                context.factory = PersistenceUnitProcessor.createFactory(pp.getValue(), info);
+                context.usedProvider = pp.getKey();
+                Hashtable<String, Object> props = new Hashtable<>();
+                props.put(EntityManagerFactoryBuilder.JPA_UNIT_NAME, context.definition.name);
+                props.put(PersistenceUnitTransactionType.class.getName(), info.getTransactionType().name());
                 context.registration = bundle.getBundleContext().registerService(
                         EntityManagerFactory.class, context.factory, props);
             }
         }).start();
     }
-        
+
     private static void destroy(Context context) {
         synchronized (context) {
-            if (context.factory != null)
+            if (context.factory != null) {
                 context.factory.close();
+            }
             context.factory = null;
             try {
                 context.registration.unregister();
@@ -89,21 +90,23 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
             context.usedProvider = null;
         }
     }
-    
+
     private synchronized void addRegistration(Bundle bundle) {
         List<Context> contexts = bundles.get(bundle);
         if (contexts != null) {
             contexts.stream().
-                filter((c) -> c.factory == null).
-                filter((c) -> provider.get(c.definition.provider) != null).
-                forEach((context) -> create(bundle, context));
+            filter((c) -> c.factory == null).
+            filter((c) -> provider.get(c.definition.provider) != null).
+            forEach((context) -> create(bundle, context));
         }
     }
-    
+
     @Override
     public Object addingBundle(Bundle bundle, BundleEvent event) {
         String persistence = bundle.getHeaders().get("Meta-Persistence");
-        if (persistence == null) return null;
+        if (persistence == null) {
+            return null;
+        }
         // Process the persistence units.
         String[] names = persistence.split(",");
         final Collection<String> units = new LinkedHashSet<>();
@@ -113,12 +116,12 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
         units.addAll(Arrays.asList(names));
         // Every file may have multiple units. So need to flatmap the lot
         List<Context> punits = units.stream().
-            map((c) -> c.trim()).
-            filter((c) -> c.length() > 0).
-            flatMap((name) -> PersistenceUnitProcessor.getDefinitions(bundle, name).stream()).
-            distinct().
-            map((d) -> new Context(d)).
-            collect(Collectors.toList());
+                map((c) -> c.trim()).
+                filter((c) -> c.length() > 0).
+                flatMap((name) -> PersistenceUnitProcessor.getDefinitions(bundle, name).stream()).
+                distinct().
+                map((d) -> new Context(d)).
+                collect(Collectors.toList());
         // Now got the persistence unit definitions.
         synchronized (this) {
             bundles.put(bundle, punits);
@@ -148,7 +151,7 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
             contexts.forEach((context) -> destroy(context));
         }
     }
-    
+
     @Override
     public synchronized void added(String providerName, PersistenceProvider p) {
         new ArrayList<>(bundles.keySet()).stream().forEach((b) -> addRegistration(b));
@@ -157,8 +160,8 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
     @Override
     public synchronized void removed(String providerName) {
         bundles.entrySet().stream().
-            forEach((e) -> e.getValue().stream().
-                    filter((c) -> providerName.equals(c.usedProvider)).forEach((c) -> destroy(c)));
+        forEach((e) -> e.getValue().stream().
+                filter((c) -> providerName.equals(c.usedProvider)).forEach((c) -> destroy(c)));
     }
 
     static class Context {
@@ -167,7 +170,7 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
         PersistenceUnitDefinition definition;
         String usedProvider;
         Context(PersistenceUnitDefinition def) {
-            this.definition = def;
+            definition = def;
         }
     }
 }
