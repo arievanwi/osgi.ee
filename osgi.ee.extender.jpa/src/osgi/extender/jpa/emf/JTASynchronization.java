@@ -21,13 +21,13 @@ import javax.transaction.Status;
 import javax.transaction.Synchronization;
 
 /**
- * Synchronizer for JTA transaction based functionality. 
+ * Synchronizer for JTA transaction based functionality.
  */
 class JTASynchronization implements Synchronization {
     private ThreadLocal<EntityManager> local;
-    
+
     public JTASynchronization(ThreadLocal<EntityManager> l) {
-        this.local = l;
+        local = l;
     }
 
     @Override
@@ -37,7 +37,9 @@ class JTASynchronization implements Synchronization {
             try {
                 if (status == Status.STATUS_COMMITTED || status == Status.STATUS_COMMITTING) {
                     // Somehow the data is not flushed to the database in JTA mode. Needs to be done.
-                    manager.flush();
+                    try {
+                        manager.flush();
+                    } catch (Exception exc) {}
                 }
                 // Cache remains dirty as well. For now, just refresh the lot.
                 manager.getEntityManagerFactory().getCache().evictAll();

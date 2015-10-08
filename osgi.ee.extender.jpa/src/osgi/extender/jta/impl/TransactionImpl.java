@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.transaction.HeuristicMixedException;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.SystemException;
@@ -30,7 +29,7 @@ import javax.transaction.xa.Xid;
 
 /**
  * Transaction implementation. Simple variant that does what the standard says (I think).
- * 
+ *
  * @author Arie van Wijngaarden
  */
 public class TransactionImpl implements Transaction {
@@ -42,15 +41,15 @@ public class TransactionImpl implements Transaction {
     private List<XAResource> resources = new ArrayList<>();
     private Xid xid = new XXid();
     private long startTime = System.currentTimeMillis();
-    
+
     void setStatus(int status) {
         this.status = status;
     }
-    
+
     @Override
     public boolean delistResource(XAResource res, int flag) {
         try {
-            res.end(xid, (status == Status.STATUS_MARKED_ROLLBACK) ? XAResource.TMFAIL : XAResource.TMSUCCESS);
+            res.end(xid, status == Status.STATUS_MARKED_ROLLBACK ? XAResource.TMFAIL : XAResource.TMSUCCESS);
         } catch (Exception exc) {
             throw new RuntimeException(exc);
         }
@@ -75,7 +74,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void registerSynchronization(Synchronization sync) {
-        this.toSync.add(sync);
+        toSync.add(sync);
     }
 
     private static <T> void doWith(T t, Cons<T> cons) {
@@ -85,7 +84,7 @@ public class TransactionImpl implements Transaction {
             throw new RuntimeException(exc);
         }
     }
-    
+
     @Override
     public void rollback() throws SystemException {
         setStatus(Status.STATUS_ROLLING_BACK);
@@ -99,9 +98,9 @@ public class TransactionImpl implements Transaction {
             throw new SystemException(exc.getMessage());
         }
     }
-    
+
     @Override
-    public void commit() throws HeuristicMixedException, SystemException {
+    public void commit() throws SystemException {
         if (status == Status.STATUS_MARKED_ROLLBACK) {
             rollback();
         }
@@ -115,7 +114,7 @@ public class TransactionImpl implements Transaction {
                 toSync.stream().forEach((s) ->  doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED)));
             } catch (Exception exc) {
                 exc.printStackTrace();
-                throw new HeuristicMixedException(exc.getMessage());
+                throw new SystemException(exc.getMessage());
             }
         }
     }
@@ -124,7 +123,7 @@ public class TransactionImpl implements Transaction {
     public void setRollbackOnly() {
         setStatus(Status.STATUS_MARKED_ROLLBACK);
     }
-    
+
     long getStartTime() {
         return startTime;
     }
@@ -132,13 +131,13 @@ public class TransactionImpl implements Transaction {
 
 class XXid implements Xid {
     private static int sequence = 1;
-    
+
     private int thisSequence;
-    
+
     XXid() {
-        this.thisSequence = sequence++;
+        thisSequence = sequence++;
     }
-    
+
     @Override
     public byte[] getBranchQualifier() {
         return new byte[0];
