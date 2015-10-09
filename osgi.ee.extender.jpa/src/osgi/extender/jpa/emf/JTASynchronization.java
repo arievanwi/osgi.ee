@@ -25,9 +25,13 @@ import javax.transaction.Synchronization;
  */
 class JTASynchronization implements Synchronization {
     private ThreadLocal<EntityManager> local;
+    private boolean flushOnCommit;
+    private boolean evictCache;
 
-    public JTASynchronization(ThreadLocal<EntityManager> l) {
+    public JTASynchronization(ThreadLocal<EntityManager> l, boolean flushOnCommit, boolean evictCache) {
         local = l;
+        this.flushOnCommit = flushOnCommit;
+        this.evictCache = evictCache;
     }
 
     @Override
@@ -35,14 +39,16 @@ class JTASynchronization implements Synchronization {
         EntityManager manager = local.get();
         if (manager != null) {
             try {
-                if (status == Status.STATUS_COMMITTED || status == Status.STATUS_COMMITTING) {
-                    // Somehow the data is not flushed to the database in JTA mode. Needs to be done.
+                if (flushOnCommit && (status == Status.STATUS_COMMITTED || status == Status.STATUS_COMMITTING)) {
+                    // Flushing requested.
                     try {
                         manager.flush();
                     } catch (Exception exc) {}
                 }
-                // Cache remains dirty as well. For now, just refresh the lot.
-                manager.getEntityManagerFactory().getCache().evictAll();
+                if (evictCache) {
+                    // Wants to evict the cache as well.
+                    manager.getEntityManagerFactory().getCache().evictAll();
+                }
                 manager.close();
             } finally {
                 local.remove();
