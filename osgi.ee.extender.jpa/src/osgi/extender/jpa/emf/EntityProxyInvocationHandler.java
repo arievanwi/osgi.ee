@@ -127,7 +127,7 @@ class EntityProxyInvocationHandler implements InvocationHandler {
      */
     private static void registerEntityManagerJTA(EntityManager manager, final ThreadLocal<EntityManager> local,
             final TransactionManager transactionManager) throws Exception {
-        Synchronization sync = new JTASynchronization(local, false, false);
+        Synchronization sync = new JTASynchronization(local, true, false);
         transactionManager.getTransaction().registerSynchronization(sync);
         manager.joinTransaction();
     }
