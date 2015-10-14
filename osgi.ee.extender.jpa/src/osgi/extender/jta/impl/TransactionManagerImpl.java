@@ -23,7 +23,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.stream.Collectors;
 
-import javax.transaction.HeuristicMixedException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.Status;
 import javax.transaction.SystemException;
@@ -61,7 +60,7 @@ class TransactionManagerImpl implements TransactionManager {
     }
     
     @Override
-    public void commit() throws HeuristicMixedException, SystemException {
+    public void commit() throws SystemException {
         _getTransaction(true).commit();
         remove();
     }

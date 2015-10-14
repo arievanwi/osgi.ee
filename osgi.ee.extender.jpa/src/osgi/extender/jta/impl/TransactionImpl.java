@@ -19,6 +19,7 @@ package osgi.extender.jta.impl;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
@@ -28,7 +29,9 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 /**
- * Transaction implementation. Simple variant that does what the standard says (I think).
+ * Transaction implementation. Simple variant that does what the standard says
+ * (I think). Note that a transaction instance is thread safe because it is only
+ * accessed from one thread, as required by the JEE standard.
  *
  * @author Arie van Wijngaarden
  */
@@ -85,14 +88,34 @@ public class TransactionImpl implements Transaction {
         }
     }
 
+    /**
+     * Experience shows that in some cases the synchronization objects are added
+     * while we are doing the commits as a result of EntityListeners for
+     * example. Therefore prevent concurrent modification exceptions.
+     * 
+     * @param c The consumer to execute on all synchronization objects
+     */
+    private void doWithSyncs(Consumer<Synchronization> c) {
+        if (toSync.size() == 0) return;
+        List<Synchronization> toDo = toSync;
+        toSync = new ArrayList<>();
+        // Perform the consumer on the existing list.
+        toDo.stream().forEach((s) -> c.accept(s));
+        // And on the new list recursively.
+        doWithSyncs(c);
+        // Gather the lot to the new list.
+        toDo.addAll(toSync);
+        toSync = toDo;
+    }
+    
     @Override
     public void rollback() throws SystemException {
         setStatus(Status.STATUS_ROLLING_BACK);
         try {
-            toSync.stream().forEach((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
+            doWithSyncs((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
             resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0)));
             resources.stream().forEach((r) -> doWith(r, (rr) -> rr.rollback(xid)));
-            toSync.stream().forEach((s) ->  doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_ROLLEDBACK)));
+            doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_ROLLEDBACK)));
         } catch (Exception exc) {
             exc.printStackTrace();
             throw new SystemException(exc.getMessage());
@@ -107,11 +130,11 @@ public class TransactionImpl implements Transaction {
         else {
             setStatus(Status.STATUS_COMMITTING);
             try {
-                toSync.stream().forEach((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
+                doWithSyncs((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
                 resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0)));
                 resources.stream().forEach((r) -> doWith(r, (rr) -> rr.prepare(xid)));
                 resources.stream().forEach((r) -> doWith(r, (rr) -> rr.commit(xid, true)));
-                toSync.stream().forEach((s) ->  doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED)));
+                doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED)));
             } catch (Exception exc) {
                 exc.printStackTrace();
                 throw new SystemException(exc.getMessage());
