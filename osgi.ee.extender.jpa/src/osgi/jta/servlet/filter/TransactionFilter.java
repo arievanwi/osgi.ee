@@ -23,6 +23,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
 import javax.transaction.Status;
 import javax.transaction.TransactionManager;
 
@@ -36,6 +38,7 @@ import org.osgi.util.tracker.ServiceTracker;
  * filter just continues without transaction management.
  */
 public class TransactionFilter implements Filter {
+    private static final String ATTR = "$$Transaction$$Mutex";
     private ServiceTracker<TransactionManager, TransactionManager> tracker;
     
     private TransactionManager getManager(ServletContext sc) {
@@ -61,19 +64,33 @@ public class TransactionFilter implements Filter {
             FilterChain chain) throws ServletException {
         TransactionManager manager = getManager(request.getServletContext());
         try {
-            if (manager != null)
-                manager.begin();
-            chain.doFilter(request, response);
-            if (manager != null) {
-                if (manager.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
-                    manager.rollback();
+            // Synchronize on the HTTP session. This to make sure that no race condition
+            // occurs where the output is already flushed to the client before
+            // the transaction is handled, possibly resulting in the client to
+            // not see the last changes.
+            Object toSynchronize = new Object();
+            if (HttpServletRequest.class.isAssignableFrom(request.getClass())) {
+                HttpServletRequest r = (HttpServletRequest) request;
+                HttpSession session = r.getSession();
+                toSynchronize = session.getAttribute(ATTR);
+                if (toSynchronize == null) {
+                    session.setAttribute(ATTR, toSynchronize = new Object());
                 }
-                else {
-                    manager.commit();
+            }
+            synchronized (toSynchronize) {
+                if (manager != null)
+                    manager.begin();
+                chain.doFilter(request, response);
+                if (manager != null) {
+                    if (manager.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
+                        manager.rollback();
+                    }
+                    else {
+                        manager.commit();
+                    }
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
             try {
                 if (manager != null)
                     manager.rollback();
