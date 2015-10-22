@@ -17,6 +17,7 @@
 package osgi.cdi.faces;
 
 import java.io.InputStream;
+import java.io.Serializable;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +46,7 @@ import osgi.extender.resource.BundleResourceProvider;
  * the OSGi container. As a result, resources may be returned from another bundle (that
  * may by the way come and go). The functionality is therefore closely coupled to the
  * resource exporting functionality.
- * 
+ *
  * @author Arie van Wijngaarden
  */
 class BundleResourceHandler extends ResourceHandlerWrapper {
@@ -55,21 +56,21 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
     /**
      * Construct a resource handler. Delegates to the current faces context or
      * uses services based on the bundle context provided.
-     * 
+     *
      * @param context The context, used for finding services
      * @param wrapped The wrapped resource handler
      * @param filt The filter specification, may be null
      */
     BundleResourceHandler(BundleContext context, ResourceHandler wrapped, String filt) throws Exception {
-        this.delegate = wrapped;
+        delegate = wrapped;
         String filter = "(" + Constants.OBJECTCLASS + "=" + BundleResourceProvider.class.getName() + ")";
         if (filt != null) {
             filter = "(&" + filter + filt + ")";
         }
-        tracker = new ServiceTracker<>(context, context.createFilter(filter), null); 
+        tracker = new ServiceTracker<>(context, context.createFilter(filter), null);
         tracker.open();
     }
-    
+
     @Override
     public ResourceHandler getWrapped() {
         return delegate;
@@ -77,20 +78,24 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
 
     /**
      * Get a resource from one of the found providers.
-     * 
+     *
      * @param path The path, basically the directory/lib where to find a resource
      * @param resource The resource name
      * @return A bundle resource, if found. Otherwise null
      */
     private BundleResource getResource(String path, String resource) {
         List<BundleResource> ress = tracker.getTracked().values().stream().
-            map((rp) -> rp.getResource(path, resource)).
-            filter((r) -> r != null).
-            collect(Collectors.toList());
+                map((rp) -> rp.getResource(path, resource)).
+                filter((r) -> r != null).
+                collect(Collectors.toList());
         // If found, return.
-        if (ress.size() > 0) return ress.get(0);
+        if (ress.size() > 0) {
+            return ress.get(0);
+        }
         // If no further searching possible, end.
-        if (path == null) return null;
+        if (path == null) {
+            return null;
+        }
         // Check if there is another grouping to be done.
         int index = path.indexOf("/");
         if (index < 0) {
@@ -98,7 +103,7 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
         }
         return getResource(path.substring(0, index), path.substring(index + 1) + "/" + resource);
     }
-    
+
     /**
      * Basic resource creation method. First tries to find the resource in the wrapped
      * resource handler and if not found there, locates the resource in one of the
@@ -108,14 +113,14 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
     public Resource createResource(String name, String lib, String type) {
         Resource resource = null;
         // Get the resource from the other bundles.
-        BundleResource thisResource = this.getResource(lib, name);
+        BundleResource thisResource = getResource(lib, name);
         if (thisResource != null) {
-            ServletContext context = 
+            ServletContext context =
                     (ServletContext) FacesContext.getCurrentInstance().getExternalContext().getContext();
             // Find the faces registration.
-            Optional<? extends ServletRegistration> registration = 
-            context.getServletRegistrations().values().stream().
-                filter((sr) -> "javax.faces.webapp.FacesServlet".equals(sr.getClassName())).findFirst();
+            Optional<? extends ServletRegistration> registration =
+                    context.getServletRegistrations().values().stream().
+                    filter((sr) -> "javax.faces.webapp.FacesServlet".equals(sr.getClassName())).findFirst();
             // Check the mapping.
             String first = registration.get().getMappings().iterator().next();
             String p = null;
@@ -126,46 +131,14 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
             }
             else if (first.endsWith("*")){
                 // Must be prefix mapping.
-                p = context.getContextPath() + first.substring(0, first.length() - 2) + 
-                        ResourceHandler.RESOURCE_IDENTIFIER + "/{}"; 
+                p = context.getContextPath() + first.substring(0, first.length() - 2) +
+                        ResourceHandler.RESOURCE_IDENTIFIER + "/{}";
             }
             else {
                 throw new RuntimeException("(bugcheck): cannot determine path for Faces servlet");
             }
-            final String path = p;
             // Wrap it into a Resource object.
-            resource = new Resource() {
-                @Override
-                public InputStream getInputStream() {
-                    return thisResource.getInputStream();
-                }
-                @Override
-                public String getRequestPath() {
-                    String query = "";
-                    String ln = getLibraryName();
-                    if (ln != null) {
-                        query += "?ln=" + ln;
-                    }
-                    return path.replace("{}", this.getResourceName()) + query;
-                }
-                @Override
-                public Map<String, String> getResponseHeaders() {
-                    Map<String, String> headers = new HashMap<>();
-                    return headers;
-                }
-                @Override
-                public String getContentType() {
-                    return FacesContext.getCurrentInstance().getExternalContext().getMimeType(getResourceName());
-                }
-                @Override
-                public URL getURL() {
-                    return thisResource.getURL();
-                }
-                @Override
-                public boolean userAgentNeedsUpdate(FacesContext c) {
-                    return true;
-                }
-            };
+            resource = new OurResource(thisResource.getURL(), p);
             resource.setLibraryName(lib);
             resource.setResourceName(name);
         }
@@ -184,18 +157,13 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
     public Resource createResource(String name) {
         return createResource(name, null, null);
     }
-    
+
     @Override
     public ViewResource createViewResource(FacesContext context, String resource) {
         BundleResource res = getResource(null, resource);
         ViewResource toReturn;
         if (res != null) {
-            toReturn = new ViewResource() {
-                @Override
-                public URL getURL() {
-                    return res.getURL();
-                }
-            };
+            toReturn = new OurResource(res.getURL(), null);
         }
         else {
             toReturn = getWrapped().createViewResource(context, resource);
@@ -206,5 +174,57 @@ class BundleResourceHandler extends ResourceHandlerWrapper {
     @Override
     public boolean libraryExists(String exists) {
         return true;  // We don't check, just assume it is there.
+    }
+}
+
+class OurResource extends Resource implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private URL url;
+    private String path;
+
+    OurResource(URL u, String p) {
+        url = u;
+        path = p;
+    }
+
+    @Override
+    public InputStream getInputStream() {
+        try {
+            return url.openStream();
+        } catch (Exception exc) {
+            exc.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public String getRequestPath() {
+        String query = "";
+        String ln = getLibraryName();
+        if (ln != null) {
+            query += "?ln=" + ln;
+        }
+        return path.replace("{}", getResourceName()) + query;
+    }
+
+    @Override
+    public Map<String, String> getResponseHeaders() {
+        Map<String, String> headers = new HashMap<>();
+        return headers;
+    }
+
+    @Override
+    public String getContentType() {
+        return FacesContext.getCurrentInstance().getExternalContext().getMimeType(getResourceName());
+    }
+
+    @Override
+    public URL getURL() {
+        return url;
+    }
+
+    @Override
+    public boolean userAgentNeedsUpdate(FacesContext c) {
+        return true;
     }
 }

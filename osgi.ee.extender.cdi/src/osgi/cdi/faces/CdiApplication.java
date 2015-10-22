@@ -16,6 +16,7 @@
  */
 package osgi.cdi.faces;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +32,10 @@ import javax.faces.FacesException;
 import javax.faces.application.Application;
 import javax.faces.application.ApplicationWrapper;
 import javax.faces.application.ResourceHandler;
+import javax.faces.component.UIComponent;
 import javax.faces.context.FacesContext;
 import javax.faces.validator.Validator;
+import javax.faces.validator.ValidatorException;
 import javax.servlet.ServletContext;
 
 import org.osgi.framework.BundleContext;
@@ -44,28 +47,28 @@ import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * Application wrapper. Wraps another application and performs some special actions on the faces
- * application to integrate with CDI, most notably: adding EL resolvers and wrapping an expression 
+ * application to integrate with CDI, most notably: adding EL resolvers and wrapping an expression
  * factory to take care of CDI integration.
- * 
+ *
  * @author Arie van Wijngaarden
  */
 class CdiApplication extends ApplicationWrapper {
     private Application delegate;
     private ServiceTracker<BeanManager, BeanManager> beanManagerTracker;
     private ServiceTracker<Validator, Validator> validators;
-    
+
     /**
      * Create a new wrapped application for this instance.
-     * 
+     *
      * @param delegate The wrapped application object
      */
     CdiApplication(Application delegate) {
         this.delegate = delegate;
     }
-    
+
     /**
      * Get the bundle context. It is retrieved from the servlet attribute as per OSGi web specifiction.
-     * 
+     *
      * @return The bundle context
      */
     private static BundleContext context() {
@@ -77,21 +80,21 @@ class CdiApplication extends ApplicationWrapper {
 
     /**
      * Get the filter specification as present in the init parameter.
-     * 
+     *
      * @return The filter specification. May be null
      */
     private static String getFilter() {
         return FacesContext.getCurrentInstance().getExternalContext().getInitParameter("osgi.extender.cdi.faces.filter");
     }
-    
+
     /**
      * Check, and if needed, construct a service tracker for a specific object given a specific filter.
-     * 
+     *
      * @param current The current service tracker provider. May result to a null value
      * @param clz The tracker class
      * @param setter The setter to store the tracker back
      */
-    private static <T> void check(Supplier<ServiceTracker<T, T>> current, Class<T> clz, 
+    private static <T> void check(Supplier<ServiceTracker<T, T>> current, Class<T> clz,
             Consumer<ServiceTracker<T, T>> setter) {
         ServiceTracker<T, T> thisTracker = current.get();
         if (thisTracker == null) {
@@ -103,7 +106,7 @@ class CdiApplication extends ApplicationWrapper {
                     filter = "(&" + filter + filterSpec + ")";
                 }
                 try {
-                    thisTracker = new ServiceTracker<>(bundleContext, 
+                    thisTracker = new ServiceTracker<>(bundleContext,
                             FrameworkUtil.createFilter(filter), null);
                     thisTracker.open();
                 } catch (Exception exc) {
@@ -113,19 +116,19 @@ class CdiApplication extends ApplicationWrapper {
             }
         }
     }
-    
+
     /**
      * Perform a check on the set-up. Since during construction of this application we don't know anything about
-     * the bean managers and resource handlers (since the faces context may not even be created), we need to 
+     * the bean managers and resource handlers (since the faces context may not even be created), we need to
      * perform this checking at the specific overrides.
      */
     private synchronized void check() {
         check(() -> beanManagerTracker, BeanManager.class, (a) -> beanManagerTracker = a);
     }
-    
+
     /**
      * Perform an action for the tracked bean managers.
-     * 
+     *
      * @param consumer The consumer to execute for each manager tracked
      */
     private void doWithBeanManagers(Consumer<BeanManager> consumer) {
@@ -170,7 +173,7 @@ class CdiApplication extends ApplicationWrapper {
         }
     }
 
-    
+
     @Override
     public Validator createValidator(String name) throws FacesException {
         synchronized (this) {
@@ -183,7 +186,7 @@ class CdiApplication extends ApplicationWrapper {
                         .map((e) -> e.getValue())
                         .findAny();
                 if (v.isPresent()) {
-                    return v.get();
+                    return new OurValidator(v.get());
                 }
             }
         }
@@ -194,11 +197,24 @@ class CdiApplication extends ApplicationWrapper {
     public Application getWrapped() {
         return delegate;
     }
-    
+
     private static class Wrapper {
         ExpressionFactory factory;
         Wrapper(ExpressionFactory f) {
-            this.factory = f;
+            factory = f;
         }
+    }
+}
+
+class OurValidator implements Validator, Serializable {
+    private Validator delegate;
+
+    OurValidator(Validator v) {
+        delegate = v;
+    }
+
+    @Override
+    public void validate(FacesContext context, UIComponent component, Object object) throws ValidatorException {
+        delegate.validate(context, component, object);
     }
 }
