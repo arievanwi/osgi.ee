@@ -17,6 +17,7 @@
 package osgi.extender.cdi.extension.context;
 
 import java.lang.annotation.Annotation;
+import java.util.Collection;
 
 import javax.enterprise.context.spi.Contextual;
 
@@ -39,47 +40,52 @@ import osgi.extender.cdi.scopes.ScopeListener;
  * </ol>
  * Note that, although the context is bundle specific, it can (and will) be manipulated globally via
  * the service. This makes it for example possible to synchronize sessions over all bundles in one go.
- * 
+ *
  * @author Arie van Wijngaarden
  */
 public class MultiInstanceContext extends AbstractContext implements ExtenderContext {
     private ThreadLocal<Object> current;
-    
+
     /**
      * Create a multi-instance context with a specific scope.
-     * 
+     *
      * @param scope The scope for which to create the context
      * @param listener The listener for changes to the caches
      */
     public MultiInstanceContext(Class<? extends Annotation> scope, ContextBeansListener listener) {
         super(scope, listener);
-        this.current = new ThreadLocal<>();
+        current = new ThreadLocal<>();
     }
-    
+
     @Override
     public void setCurrent(Object managed) {
         if (managed == null) {
-            this.current.remove();
+            current.remove();
         }
         else {
-            this.current.set(managed);
+            current.set(managed);
             if (getCache(managed) == null) {
                 add(managed);
             }
         }
     }
-    
+
     @Override
     protected ContextBeansHolder getCache() {
-        ContextBeansHolder thisOne = getCache(this.current.get());
+        ContextBeansHolder thisOne = getCache(current.get());
         if (thisOne == null) {
             throw new RuntimeException("(bugcheck): cache not found for current context. Scope: " + getScope());
         }
         return thisOne;
     }
-    
+
     @Override
     public void destroy(Contextual<?> bean) {
         getCache().remove(bean);
+    }
+
+    @Override
+    public Collection<Object> getIdentifiers() {
+        return getManagers();
     }
 }

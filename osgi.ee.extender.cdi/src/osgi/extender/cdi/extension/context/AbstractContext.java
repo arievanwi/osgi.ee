@@ -18,6 +18,7 @@ package osgi.extender.cdi.extension.context;
 
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,29 +27,29 @@ import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
 
 /**
- * Base class for contexts. Takes care of context management, meaning the caching of beans and 
+ * Base class for contexts. Takes care of context management, meaning the caching of beans and
  * instances as needed by the CDI container. It allows for multiple caches per scope, hence enabling
- * the use of request and session scopes. 
- * 
+ * the use of request and session scopes.
+ *
  * @author Arie van Wijngaarden
  */
 public abstract class AbstractContext implements AlterableContext {
     private Class<? extends Annotation> scope;
     private Map<Object, ContextBeansHolder> scopeEntry;
     private ContextBeansListener listener;
-    
+
     /**
      * Create a context for the specific scope.
-     * 
+     *
      * @param scope The scope to create the context for
      * @param listener The listener for beans for which instances are created/deleted
      */
     AbstractContext(Class<? extends Annotation> scope, ContextBeansListener listener) {
         this.scope = scope;
-        this.scopeEntry = new HashMap<>();
+        scopeEntry = new HashMap<>();
         this.listener = listener;
     }
-    
+
     @Override
     public <T> T get(Contextual<T> bean) {
         @SuppressWarnings("unchecked")
@@ -85,7 +86,7 @@ public abstract class AbstractContext implements AlterableContext {
     /**
      * Add a new variant of this scope's cache. The variant is indexed/identified
      * by the object passed which should further be used to find the related cache.
-     * 
+     *
      * @param managed The object that serves as cache key entry
      */
     public void add(Object managed) {
@@ -94,10 +95,10 @@ public abstract class AbstractContext implements AlterableContext {
             scopeEntry.put(managed, holder);
         }
     }
-    
+
     /**
      * Remove the cache for the specific identifier and clean it up.
-     * 
+     *
      * @param managed The key/identifier of the cache
      */
     public void remove(Object managed) {
@@ -105,12 +106,13 @@ public abstract class AbstractContext implements AlterableContext {
         synchronized (scopeEntry) {
             cache = scopeEntry.remove(managed);
         }
-        if (cache != null)
+        if (cache != null) {
             cache.destroy();
+        }
     }
-    
+
     /**
-     * Clean up the mess. 
+     * Clean up the mess.
      */
     public void destroy() {
         ArrayList<ContextBeansHolder> copy = new ArrayList<>();
@@ -120,10 +122,10 @@ public abstract class AbstractContext implements AlterableContext {
         }
         copy.stream().forEach((c) -> c.destroy());
     }
-    
+
     /**
-     * Get a cache from the set with managed caches. 
-     * 
+     * Get a cache from the set with managed caches.
+     *
      * @param managed The identifier of the cache. Should be used earlier
      * in {@link #add(Object)} to create the cache.
      * @return A bean cache, or null if the add method was not called earlier
@@ -133,11 +135,22 @@ public abstract class AbstractContext implements AlterableContext {
             return scopeEntry.get(managed);
         }
     }
-    
+
     /**
-     * Get the cache that is currently active. The way "active" is defined is dependent on 
+     * Get the keys of the current scope entries.
+     *
+     * @return The keys that manage a scope entry
+     */
+    protected Collection<Object> getManagers() {
+        synchronized (scopeEntry) {
+            return new ArrayList<>(scopeEntry.keySet());
+        }
+    }
+
+    /**
+     * Get the cache that is currently active. The way "active" is defined is dependent on
      * the actual subclass implementation.
-     * 
+     *
      * @return The bean cache found
      */
     protected abstract ContextBeansHolder getCache();

@@ -40,13 +40,17 @@ public class ViewScopeViewHandler extends ViewHandlerWrapper {
         // If the view is not being restored but completely new, destroy the view scope.
         HttpServletRequest request = (HttpServletRequest) fc.getExternalContext().getRequest();
         Boolean restoring = (Boolean) request.getAttribute(RESTORING);
-        if (restoring == null || restoring == false) {
-            ScopeListener listener = (ScopeListener) request.getAttribute(ScopeListener.SCOPELISTENER);
-            if (listener != null) {
-                listener.setViewScope(request, true);
+        ScopeListener listener = (ScopeListener) request.getAttribute(ScopeListener.SCOPELISTENER);
+        if (listener != null) {
+            if (restoring == null || restoring == false) {
+                listener.setViewScope(request, page, true);
+            }
+            else {
+                listener.setViewScope(request, page, false);
             }
         }
-        return super.createView(fc, page);
+        UIViewRoot root = super.createView(fc, page);
+        return root;
     }
 
     @Override
