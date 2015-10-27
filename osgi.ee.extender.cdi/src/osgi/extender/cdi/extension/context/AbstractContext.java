@@ -19,7 +19,7 @@ package osgi.extender.cdi.extension.context;
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import javax.enterprise.context.spi.AlterableContext;
@@ -46,7 +46,7 @@ public abstract class AbstractContext implements AlterableContext {
      */
     AbstractContext(Class<? extends Annotation> scope, ContextBeansListener listener) {
         this.scope = scope;
-        scopeEntry = new HashMap<>();
+        scopeEntry = new LinkedHashMap<>();
         this.listener = listener;
     }
 

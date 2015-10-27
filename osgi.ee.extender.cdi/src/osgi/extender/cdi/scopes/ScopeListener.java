@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.RequestScoped;
 import javax.enterprise.context.SessionScoped;
@@ -42,6 +43,9 @@ import osgi.cdi.annotation.ViewScoped;
  * Listener for scope issues. Tracks sessions and requests and acts on registered services accordingly.
  * This listener should be registered with web applications as listener to make sure that
  * the various scopes are correctly set before CDI processing takes place.
+ *
+ * Note: this listener *must* be defined for a web application to make CDI working correctly with other
+ * scopes that default
  *
  * @author Arie van Wijngaarden
  */
@@ -76,15 +80,49 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
         forEach(consumer);
     }
 
+    /**
+     * Get the view identifier from a servlet request.
+     *
+     * @param request The servlet request
+     * @return The view identifier
+     */
+    private static String getViewId(HttpServletRequest request) {
+        String path = request.getPathInfo();
+        if (path == null) {
+            path = "";
+        }
+        return path;
+    }
+
+    /**
+     * Get the management identifier for a specific view/session combination.
+     *
+     * @param session The session to get the identifier for
+     * @param viewId The view identifier to get the the management key for
+     * @return A combination of session and view identifier. The view identifier comes first
+     * so it is possible to group identifiers by checking their first part
+     */
+    private static String getViewIdentifier(HttpSession session, String viewId) {
+        return session.getId() + "-" + viewId;
+    }
+
+    /**
+     * Get the object identifiers for a specific session from an extender context.
+     *
+     * @param context The context to get the identifiers from
+     * @param session The session it applies
+     * @return A list with object identifiers
+     */
+    private static Collection<Object> identifiersThisSession(ExtenderContext context, HttpSession session) {
+        String ident = getViewIdentifier(session, "");
+        return context.getIdentifiers().stream().filter((i) -> i.toString().startsWith(ident)).collect(Collectors.toList());
+    }
+
     @Override
     public void sessionCreated(HttpSessionEvent event) {
         HttpSession session = event.getSession();
         doWithContext(session.getServletContext(), SessionScoped.class,
-                (c) -> c.add(session));
-    }
-
-    private static String getViewIdentifier(HttpSession session, String viewId) {
-        return session.getId() + "-" + viewId;
+                (c) -> c.add(session.getId()));
     }
 
     @Override
@@ -92,15 +130,45 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
         HttpSession session = event.getSession();
         ServletContext context = session.getServletContext();
         doWithContext(context, SessionScoped.class,
-                (c) -> c.remove(session));
-        final String startsWith = getViewIdentifier(session, "");
+                (c) -> c.remove(session.getId()));
         doWithContext(context, ViewScoped.class, (c) -> {
-            c.getIdentifiers().forEach((i) -> {
-                if (i.toString().startsWith(startsWith)) {
-                    c.remove(i);
-                }
-            });
+            identifiersThisSession(c, session).forEach((i) -> c.remove(i));
         });
+    }
+
+    /**
+     * Return a consumer for an extender context that is able to set the active context for a view scope.
+     *
+     * @param request The request we are busy with
+     * @param isNewView Indication whether a new view scope must be created
+     * @return A consumer that sets the active view scope context
+     */
+    private static Consumer<ExtenderContext> setCurrent(HttpServletRequest request, boolean isNewView) {
+        HttpSession session = request.getSession(true);
+        String id = getViewIdentifier(session, getViewId(request));
+        String keepViews = request.getServletContext().getInitParameter("osgi.extender.cdi.scopes.views");
+        int nv = 10;
+        if (keepViews != null) {
+            nv = Integer.parseInt(keepViews);
+        }
+        final int numberOfViews = nv;
+
+        return (c) -> {
+            if (isNewView) {
+                // Check the number of identifiers that are in the scope.
+                // This must be limited to the max. number of pages open.
+                Collection<Object> identifiers = identifiersThisSession(c, session);
+                int toDelete = identifiers.size() - numberOfViews;
+                Iterator<Object> it = identifiers.iterator();
+                while (toDelete > 0) {
+                    c.remove(it.next());
+                    toDelete--;
+                }
+                c.remove(id);
+                c.add(id);
+            }
+            c.setCurrent(id);
+        };
     }
 
     /**
@@ -113,64 +181,34 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
      */
     public void setViewScope(HttpServletRequest request, boolean isNewView) {
         ServletContext context = request.getServletContext();
-        HttpSession session = request.getSession(true);
-        String id = getViewIdentifier(session, getViewId(request));
-        String prefix = getViewIdentifier(session, "");
-        String keepViews = request.getServletContext().getInitParameter("osgi.extender.cdi.scopes.views");
-        int nv = 10;
-        if (keepViews != null) {
-            nv = Integer.parseInt(keepViews);
-        }
-        final int numberOfViews = nv;
-        doWithContext(context, ViewScoped.class,
-                (c) -> {
-                    if (isNewView) {
-                        // Check the number of identifiers that are in the scope.
-                        // This must be limited to the max. number of pages open.
-                        Collection<Object> identifiers = c.getIdentifiers();
-                        int toDelete = identifiers.size() - numberOfViews;
-                        Iterator<Object> it = identifiers.iterator();
-                        while (toDelete > 0) {
-                            String key = it.next().toString();
-                            if (key.startsWith(prefix)) {
-                                c.remove(key);
-                                toDelete--;
-                            }
-                        }
-                        c.remove(id);
-                        c.add(id);
-                    }
-                    c.setCurrent(id);
-                });
+        doWithContext(context, ViewScoped.class, setCurrent(request, isNewView));
     }
 
-    private static String getViewId(HttpServletRequest request) {
-        String path = request.getPathInfo();
-        if (path == null) {
-            path = "";
-        }
-        return path;
-    }
-
+    /**
+     * Set a fallback view scope in case there is none defined (for example for resources or outside JSF).
+     *
+     * @param request The servlet request
+     */
     private void setFallbackViewScope(HttpServletRequest request) {
         final String referer = request.getHeader("Referer");
         final String id = getViewIdentifier(request.getSession(), getViewId(request));
         int subLength = getViewIdentifier(request.getSession(), "").length();
+        HttpSession session = request.getSession();
+        Consumer<ExtenderContext> createNew = setCurrent(request, true);
         doWithContext(request.getServletContext(), ViewScoped.class, (c) -> {
             if (c.getIdentifiers().contains(id)) {
                 c.setCurrent(id);
             }
             else if (referer != null) {
                 // Check if the referer exists in the identifiers.
-                Optional<Object> ident = c.getIdentifiers().stream().
+                Optional<Object> ident = identifiersThisSession(c, session).stream().
                         filter((i) -> referer.contains(i.toString().substring(subLength))).findAny();
                 if (ident.isPresent()) {
                     c.setCurrent(ident.get());
                 }
             }
             else {
-                c.add(id);
-                c.setCurrent(id);
+                createNew.accept(c);
             }
         });
     }
@@ -184,7 +222,7 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
         doWithContext(context, RequestScoped.class,
                 (c) -> {c.add(request); c.setCurrent(request);});
         doWithContext(context, SessionScoped.class,
-                (c) -> c.setCurrent(session));
+                (c) -> c.setCurrent(session.getId()));
         setFallbackViewScope(request);
     }
 
