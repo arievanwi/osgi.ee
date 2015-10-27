@@ -19,6 +19,7 @@ package osgi.extender.cdi.scopes;
 import java.lang.annotation.Annotation;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import javax.enterprise.context.RequestScoped;
@@ -108,13 +109,12 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
      * the appropriate request attribute.
      *
      * @param request The servlet request
-     * @param viewId The view identifier
      * @param isNewView Indication whether a new view scope must be forced
      */
-    public void setViewScope(HttpServletRequest request, String viewId, boolean isNewView) {
+    public void setViewScope(HttpServletRequest request, boolean isNewView) {
         ServletContext context = request.getServletContext();
         HttpSession session = request.getSession(true);
-        String id = getViewIdentifier(session, viewId);
+        String id = getViewIdentifier(session, getViewId(request));
         String prefix = getViewIdentifier(session, "");
         String keepViews = request.getServletContext().getInitParameter("osgi.extender.cdi.scopes.views");
         int nv = 10;
@@ -144,6 +144,37 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
                 });
     }
 
+    private static String getViewId(HttpServletRequest request) {
+        String path = request.getPathInfo();
+        if (path == null) {
+            path = "";
+        }
+        return path;
+    }
+
+    private void setFallbackViewScope(HttpServletRequest request) {
+        final String referer = request.getHeader("Referer");
+        final String id = getViewIdentifier(request.getSession(), getViewId(request));
+        int subLength = getViewIdentifier(request.getSession(), "").length();
+        doWithContext(request.getServletContext(), ViewScoped.class, (c) -> {
+            if (c.getIdentifiers().contains(id)) {
+                c.setCurrent(id);
+            }
+            else if (referer != null) {
+                // Check if the referer exists in the identifiers.
+                Optional<Object> ident = c.getIdentifiers().stream().
+                        filter((i) -> referer.contains(i.toString().substring(subLength))).findAny();
+                if (ident.isPresent()) {
+                    c.setCurrent(ident.get());
+                }
+            }
+            else {
+                c.add(id);
+                c.setCurrent(id);
+            }
+        });
+    }
+
     @Override
     public void requestInitialized(ServletRequestEvent event) {
         HttpServletRequest request = (HttpServletRequest) event.getServletRequest();
@@ -154,6 +185,7 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
                 (c) -> {c.add(request); c.setCurrent(request);});
         doWithContext(context, SessionScoped.class,
                 (c) -> c.setCurrent(session));
+        setFallbackViewScope(request);
     }
 
     @Override

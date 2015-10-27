@@ -43,10 +43,10 @@ public class ViewScopeViewHandler extends ViewHandlerWrapper {
         ScopeListener listener = (ScopeListener) request.getAttribute(ScopeListener.SCOPELISTENER);
         if (listener != null) {
             if (restoring == null || restoring == false) {
-                listener.setViewScope(request, page, true);
+                listener.setViewScope(request, true);
             }
             else {
-                listener.setViewScope(request, page, false);
+                listener.setViewScope(request, false);
             }
         }
         UIViewRoot root = super.createView(fc, page);
