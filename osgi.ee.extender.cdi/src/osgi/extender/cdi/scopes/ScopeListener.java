@@ -88,8 +88,8 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
      */
     private static String getViewId(HttpServletRequest request) {
         String path = request.getPathInfo();
-        if (path == null) {
-            path = "";
+        if (path != null && path.endsWith("/")) {
+            path = null;
         }
         return path;
     }
@@ -103,6 +103,9 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
      * so it is possible to group identifiers by checking their first part
      */
     private static String getViewIdentifier(HttpSession session, String viewId) {
+        if (viewId == null) {
+            return null;
+        }
         return session.getId() + "-" + viewId;
     }
 
@@ -132,7 +135,9 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
         doWithContext(context, SessionScoped.class,
                 (c) -> c.remove(session.getId()));
         doWithContext(context, ViewScoped.class, (c) -> {
-            identifiersThisSession(c, session).forEach((i) -> c.remove(i));
+            identifiersThisSession(c, session).forEach((i) -> {
+                c.remove(i);
+            });
         });
     }
 
@@ -154,6 +159,9 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
         final int numberOfViews = nv;
 
         return (c) -> {
+            if (id == null) {
+                return;
+            }
             if (isNewView) {
                 // Check the number of identifiers that are in the scope.
                 // This must be limited to the max. number of pages open.
