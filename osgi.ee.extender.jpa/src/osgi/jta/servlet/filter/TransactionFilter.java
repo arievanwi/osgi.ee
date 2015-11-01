@@ -108,6 +108,7 @@ public class TransactionFilter implements Filter {
     
     @Override
     public void destroy() {
-        tracker.close();
+        if (tracker != null)
+            tracker.close();
     }
 }
