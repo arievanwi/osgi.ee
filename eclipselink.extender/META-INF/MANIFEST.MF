@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Eclipselink service extender
 Bundle-SymbolicName: eclipselink.extender
-Bundle-Version: 1.0.1
+Bundle-Version: 1.0.2
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: javax.persistence;version="2.1.0",
  javax.persistence.spi;version="2.1.0",
