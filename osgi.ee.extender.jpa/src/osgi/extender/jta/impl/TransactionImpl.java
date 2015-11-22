@@ -128,11 +128,12 @@ public class TransactionImpl implements Transaction {
             rollback();
         }
         else {
-            setStatus(Status.STATUS_COMMITTING);
             try {
                 doWithSyncs((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
                 resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0)));
+                setStatus(Status.STATUS_PREPARING);
                 resources.stream().forEach((r) -> doWith(r, (rr) -> rr.prepare(xid)));
+                setStatus(Status.STATUS_COMMITTING);
                 resources.stream().forEach((r) -> doWith(r, (rr) -> rr.commit(xid, true)));
                 doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED)));
             } catch (Exception exc) {
