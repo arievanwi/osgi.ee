@@ -17,46 +17,18 @@
 package osgi.extender.jpa.emf;
 
 import javax.persistence.EntityManager;
-import javax.transaction.Status;
-import javax.transaction.Synchronization;
 
 /**
  * Synchronizer for JTA transaction based functionality.
  */
-class JTASynchronization implements Synchronization {
-    private ThreadLocal<EntityManager> local;
-    private boolean flushOnCommit;
-    private boolean evictCache;
+class JTASynchronization extends BaseSynchronization {
 
-    public JTASynchronization(ThreadLocal<EntityManager> l, boolean flushOnCommit, boolean evictCache) {
-        local = l;
-        this.flushOnCommit = flushOnCommit;
-        this.evictCache = evictCache;
+    public JTASynchronization(ThreadLocal<EntityManager> l) {
+        super(l);
     }
 
     @Override
-    public void afterCompletion(int status) {
-        EntityManager manager = local.get();
-        if (manager != null) {
-            try {
-                if (flushOnCommit && (status == Status.STATUS_COMMITTED || status == Status.STATUS_COMMITTING)) {
-                    // Flushing requested.
-                    try {
-                        manager.flush();
-                    } catch (Exception exc) {}
-                }
-                if (evictCache) {
-                    // Wants to evict the cache as well.
-                    manager.getEntityManagerFactory().getCache().evictAll();
-                }
-                manager.close();
-            } finally {
-                local.remove();
-            }
-        }
-    }
-
-    @Override
-    public void beforeCompletion() {
+    protected void doAfterCompletion(EntityManager em, int status) {
+        // All the work is already done.
     }
 }

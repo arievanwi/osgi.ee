@@ -19,43 +19,26 @@ package osgi.extender.jpa.emf;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.transaction.Status;
-import javax.transaction.Synchronization;
 
 /**
  * Resource local synchronization.
  */
-class ResourceLocalSynchronization implements Synchronization {
+class ResourceLocalSynchronization extends BaseSynchronization {
     private EntityTransaction trans;
-    private ThreadLocal<EntityManager> local;
     
     ResourceLocalSynchronization(EntityTransaction t, ThreadLocal<EntityManager> l) {
+        super(l);
         this.trans = t;
-        this.local = l;
     }
 
     @Override
-    public void afterCompletion(int status) {
-        EntityManager manager = local.get();
-        try {
-            if (status == Status.STATUS_ROLLING_BACK || status == Status.STATUS_MARKED_ROLLBACK || 
-                status == Status.STATUS_ROLLEDBACK) {
-                trans.rollback();
-            }
-            else {
-                if (manager != null) {
-                    manager.flush();
-                }
-                trans.commit();
-            }
-            if (manager != null) {
-                manager.close();
-            }
-        } finally {
-            local.remove();
+    protected void doAfterCompletion(EntityManager em, int status) {
+        if (status == Status.STATUS_ROLLING_BACK || status == Status.STATUS_MARKED_ROLLBACK ||
+            status == Status.STATUS_ROLLEDBACK) {
+            trans.rollback();
         }
-    }
-
-    @Override
-    public void beforeCompletion() {
+        else {
+            trans.commit();
+        }
     }
 }
