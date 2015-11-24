@@ -28,7 +28,7 @@ class JTASynchronization extends BaseSynchronization {
     }
 
     @Override
-    protected void doAfterCompletion(EntityManager em, int status) {
+    protected void doAfterCompletion(int status) {
         // All the work is already done.
     }
 }

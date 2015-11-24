@@ -32,7 +32,7 @@ class ResourceLocalSynchronization extends BaseSynchronization {
     }
 
     @Override
-    protected void doAfterCompletion(EntityManager em, int status) {
+    protected void doAfterCompletion(int status) {
         if (status == Status.STATUS_ROLLING_BACK || status == Status.STATUS_MARKED_ROLLBACK ||
             status == Status.STATUS_ROLLEDBACK) {
             trans.rollback();

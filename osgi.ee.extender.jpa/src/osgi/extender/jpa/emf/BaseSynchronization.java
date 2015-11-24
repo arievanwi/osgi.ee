@@ -23,7 +23,7 @@ import javax.transaction.Synchronization;
  * Synchronizer for basic transaction handling.
  */
 abstract class BaseSynchronization implements Synchronization {
-    protected ThreadLocal<EntityManager> local;
+    private ThreadLocal<EntityManager> local;
 
     public BaseSynchronization(ThreadLocal<EntityManager> l) {
         local = l;
@@ -33,16 +33,12 @@ abstract class BaseSynchronization implements Synchronization {
         local.remove();
     }
 
-    protected abstract void doAfterCompletion(EntityManager em, int status);
+    protected abstract void doAfterCompletion(int status);
 
     @Override
     public final void afterCompletion(int status) {
         try {
-            EntityManager manager = local.get();
-            if (manager != null) {
-                manager.close();
-            }
-            doAfterCompletion(manager, status);
+            doAfterCompletion(status);
         } catch (Exception exc) {
             exc.printStackTrace();
         } finally {
@@ -51,6 +47,11 @@ abstract class BaseSynchronization implements Synchronization {
     }
 
     @Override
-    public void beforeCompletion() {
+    public final void beforeCompletion() {
+        EntityManager em = local.get();
+        if (em != null) {
+            em.close();
+            local.remove();
+        }
     }
 }
