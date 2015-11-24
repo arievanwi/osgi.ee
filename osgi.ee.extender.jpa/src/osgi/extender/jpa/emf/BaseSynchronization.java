@@ -38,21 +38,19 @@ abstract class BaseSynchronization implements Synchronization {
     @Override
     public final void afterCompletion(int status) {
         try {
-            doAfterCompletion(local.get(), status);
+            EntityManager manager = local.get();
+            if (manager != null) {
+                manager.close();
+            }
+            doAfterCompletion(manager, status);
+        } catch (Exception exc) {
+            exc.printStackTrace();
         } finally {
             local.remove();
         }
     }
 
     @Override
-    public final void beforeCompletion() {
-        EntityManager manager = local.get();
-        if (manager != null) {
-            try {
-                manager.close();
-            } catch (Exception exc) {
-                exc.printStackTrace();
-            }
-        }
+    public void beforeCompletion() {
     }
 }
