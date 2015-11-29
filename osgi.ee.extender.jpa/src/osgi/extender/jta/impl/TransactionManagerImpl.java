@@ -1,6 +1,7 @@
 /*
  * Copyright 2015, Imtech Traffic & Infra
  * Copyright 2015, aVineas IT Consulting
+ * Copyright 2015, Fujifilm Europe B.V.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,8 +62,11 @@ class TransactionManagerImpl implements TransactionManager {
     
     @Override
     public void commit() throws SystemException {
-        _getTransaction(true).commit();
-        remove();
+        try {
+            _getTransaction(true).commit();
+        } finally {
+            remove();
+        }
     }
 
     @Override
@@ -92,7 +96,7 @@ class TransactionManagerImpl implements TransactionManager {
     }
 
     @Override
-    public void rollback() throws SystemException {
+    public void rollback() {
         try {
             _getTransaction(true).rollback();
         } finally {
@@ -135,7 +139,7 @@ class TransactionManagerImpl implements TransactionManager {
             timer.cancel();
         }
         long tmo = 10000L;
-        if (tmo < 0) {
+        if (timeout < 0) {
             throw new SystemException("transaction timeout must be larger or equal 0");
         }
         else if (timeout > 0) {

@@ -1,6 +1,7 @@
 /*
  * Copyright 2015, Imtech Traffic & Infra
  * Copyright 2015, aVineas IT Consulting
+ * Copyright 2015, Fujifilm Europe B.V.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,11 +62,13 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public boolean enlistResource(XAResource res) {
-        resources.add(res);
         try {
             res.start(xid, 0);
+            resources.add(res);
         } catch (Exception exc) {
-            throw new RuntimeException(exc);
+            exc.printStackTrace();
+            setStatus(Status.STATUS_MARKED_ROLLBACK);
+            return false;
         }
         return true;
     }
@@ -80,11 +83,23 @@ public class TransactionImpl implements Transaction {
         toSync.add(sync);
     }
 
-    private static <T> void doWith(T t, Cons<T> cons) {
+    /**
+     * Perform an action on a specific object. Catch exceptions on the fly and
+     * handle according to the passed parameter.
+     * 
+     * @param t The object to pass to the consumer
+     * @param cons The consumer
+     * @param throwExceptionOnFail Indication whether to throw a runtime/other
+     * exception in case of failure
+     */
+    private static <T> void doWith(T t, Cons<T> cons, boolean throwExceptionOnFail) {
         try {
             cons.accept(t);
         } catch (Exception exc) {
-            throw new RuntimeException(exc);
+            if (throwExceptionOnFail) {
+                throw new RuntimeException(exc);
+            }
+            exc.printStackTrace();
         }
     }
 
@@ -109,17 +124,11 @@ public class TransactionImpl implements Transaction {
     }
     
     @Override
-    public void rollback() throws SystemException {
+    public void rollback() {
         setStatus(Status.STATUS_ROLLING_BACK);
-        try {
-            doWithSyncs((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
-            resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0)));
-            resources.stream().forEach((r) -> doWith(r, (rr) -> rr.rollback(xid)));
-            doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_ROLLEDBACK)));
-        } catch (Exception exc) {
-            exc.printStackTrace();
-            throw new SystemException(exc.getMessage());
-        }
+        resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0), false));
+        resources.stream().forEach((r) -> doWith(r, (rr) -> rr.rollback(xid), false));
+        doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_ROLLEDBACK), false));
     }
 
     @Override
@@ -129,15 +138,21 @@ public class TransactionImpl implements Transaction {
         }
         else {
             try {
-                doWithSyncs((s) -> doWith(s, (ss) -> ss.beforeCompletion()));
-                resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0)));
-                setStatus(Status.STATUS_PREPARING);
-                resources.stream().forEach((r) -> doWith(r, (rr) -> rr.prepare(xid)));
-                setStatus(Status.STATUS_COMMITTING);
-                resources.stream().forEach((r) -> doWith(r, (rr) -> rr.commit(xid, true)));
-                doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED)));
+                doWithSyncs((s) -> doWith(s, (ss) -> ss.beforeCompletion(), true));
+                if (getStatus() == Status.STATUS_MARKED_ROLLBACK) {
+                    rollback();
+                }
+                else {
+                    resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0), true));
+                    setStatus(Status.STATUS_PREPARING);
+                    resources.stream().forEach((r) -> doWith(r, (rr) -> rr.prepare(xid), true));
+                    setStatus(Status.STATUS_COMMITTING);
+                    resources.stream().forEach((r) -> doWith(r, (rr) -> rr.commit(xid, true), true));
+                    doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED), true));
+                }
             } catch (Exception exc) {
                 exc.printStackTrace();
+                rollback();
                 throw new SystemException(exc.getMessage());
             }
         }

@@ -38,6 +38,10 @@ abstract class BaseSynchronization implements Synchronization {
     @Override
     public final void afterCompletion(int status) {
         try {
+            EntityManager em = local.get();
+            if (em != null) {
+                em.close();
+            }
             doAfterCompletion(status);
         } catch (Exception exc) {
             exc.printStackTrace();
@@ -46,12 +50,11 @@ abstract class BaseSynchronization implements Synchronization {
         }
     }
 
+    /**
+     * The before completion method is not called in case a transaction is
+     * rolled-back. As such, no actions should be done there.
+     */
     @Override
     public final void beforeCompletion() {
-        EntityManager em = local.get();
-        if (em != null) {
-            em.close();
-            local.remove();
-        }
     }
 }
