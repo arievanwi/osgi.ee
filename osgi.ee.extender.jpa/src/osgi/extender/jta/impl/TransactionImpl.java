@@ -22,9 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import javax.persistence.RollbackException;
 import javax.transaction.Status;
 import javax.transaction.Synchronization;
-import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -114,17 +114,23 @@ public class TransactionImpl implements Transaction {
         if (toSync.size() == 0) return;
         List<Synchronization> toDo = toSync;
         toSync = new ArrayList<>();
-        // Perform the consumer on the existing list.
-        toDo.stream().forEach((s) -> c.accept(s));
-        // And on the new list recursively.
-        doWithSyncs(c);
-        // Gather the lot to the new list.
-        toDo.addAll(toSync);
-        toSync = toDo;
+        try {
+            // Perform the consumer on the existing list.
+            toDo.stream().forEach((s) -> c.accept(s));
+            // And on the new list recursively.
+            doWithSyncs(c);
+        } finally {
+            // Gather the lot to the new list.
+            toDo.addAll(toSync);
+            toSync = toDo;
+        }
     }
     
     @Override
     public void rollback() {
+        if (status == Status.STATUS_NO_TRANSACTION) {
+            throw new IllegalStateException("no transaction active");
+        }
         setStatus(Status.STATUS_ROLLING_BACK);
         resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0), false));
         resources.stream().forEach((r) -> doWith(r, (rr) -> rr.rollback(xid), false));
@@ -132,7 +138,10 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public void commit() throws SystemException {
+    public void commit() {
+        if (status == Status.STATUS_NO_TRANSACTION) {
+            throw new IllegalStateException("no transaction active");
+        }
         if (status == Status.STATUS_MARKED_ROLLBACK) {
             rollback();
         }
@@ -151,9 +160,8 @@ public class TransactionImpl implements Transaction {
                     doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED), true));
                 }
             } catch (Exception exc) {
-                exc.printStackTrace();
                 rollback();
-                throw new SystemException(exc.getMessage());
+                throw new RollbackException("could not commit transaction. Rolled it back", exc);
             }
         }
     }

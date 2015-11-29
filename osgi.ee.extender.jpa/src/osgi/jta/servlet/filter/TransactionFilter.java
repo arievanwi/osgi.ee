@@ -92,7 +92,7 @@ public class TransactionFilter implements Filter {
             }
         } catch (Exception ex) {
             try {
-                if (manager != null)
+                if (manager != null && manager.getStatus() != Status.STATUS_NO_TRANSACTION)
                     manager.rollback();
             } catch (Exception e) {
                 e.printStackTrace();

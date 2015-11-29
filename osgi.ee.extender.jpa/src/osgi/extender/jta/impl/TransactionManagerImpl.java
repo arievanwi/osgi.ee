@@ -61,7 +61,7 @@ class TransactionManagerImpl implements TransactionManager {
     }
     
     @Override
-    public void commit() throws SystemException {
+    public void commit() {
         try {
             _getTransaction(true).commit();
         } finally {

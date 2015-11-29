@@ -42,6 +42,10 @@ abstract class BaseSynchronization implements Synchronization {
             if (em != null) {
                 em.close();
             }
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
+        try {
             doAfterCompletion(status);
         } catch (Exception exc) {
             exc.printStackTrace();
