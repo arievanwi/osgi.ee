@@ -125,7 +125,7 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
     public void sessionCreated(HttpSessionEvent event) {
         HttpSession session = event.getSession();
         doWithContext(session.getServletContext(), SessionScoped.class,
-                (c) -> c.add(session.getId()));
+                (c) -> {c.add(session.getId()); c.setCurrent(session.getId());});
     }
 
     @Override
@@ -133,7 +133,7 @@ public class ScopeListener implements ServletRequestListener, HttpSessionListene
         HttpSession session = event.getSession();
         ServletContext context = session.getServletContext();
         doWithContext(context, SessionScoped.class,
-                (c) -> c.remove(session.getId()));
+                (c) -> {c.remove(session.getId()); c.setCurrent(null);});
         doWithContext(context, ViewScoped.class, (c) -> {
             identifiersThisSession(c, session).forEach((i) -> {
                 c.remove(i);
