@@ -25,6 +25,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.TransactionRequiredException;
 import javax.persistence.spi.PersistenceUnitTransactionType;
+import javax.transaction.Status;
 import javax.transaction.Synchronization;
 import javax.transaction.TransactionManager;
 
@@ -107,6 +108,9 @@ class EntityProxyInvocationHandler implements InvocationHandler {
         }
         EntityManager manager = local.get();
         if (manager == null) {
+            if (transactionManager.getStatus() == Status.STATUS_NO_TRANSACTION) {
+                throw new Exception("cannot create an entity manager while no transaction active");
+            }
             manager = factory.createEntityManager();
             synchronizer.registerEntityManager(manager, local, transactionManager);
             local.set(manager);

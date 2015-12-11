@@ -52,6 +52,9 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public boolean delistResource(XAResource res, int flag) {
+        if (status == Status.STATUS_NO_TRANSACTION) {
+            throw new IllegalStateException("no transaction active. Cannot delist a resource");
+        }
         try {
             res.end(xid, status == Status.STATUS_MARKED_ROLLBACK ? XAResource.TMFAIL : XAResource.TMSUCCESS);
         } catch (Exception exc) {
@@ -62,6 +65,9 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public boolean enlistResource(XAResource res) {
+        if (status == Status.STATUS_NO_TRANSACTION) {
+            throw new IllegalStateException("no transaction active. Cannot enlist a resource");
+        }
         try {
             res.start(xid, 0);
             resources.add(res);
@@ -80,6 +86,8 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public void registerSynchronization(Synchronization sync) {
+        if (status == Status.STATUS_NO_TRANSACTION)
+            throw new IllegalStateException("no transaction active. Cannot add a synchronization object");
         toSync.add(sync);
     }
 
