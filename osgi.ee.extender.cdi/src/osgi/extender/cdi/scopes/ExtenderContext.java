@@ -24,7 +24,7 @@ import java.util.Collection;
  * the setting of the current thread scope context as is defined by the CDI specification (one thread can
  * only have one scope). Normally, this would be used by servlet listeners to set the session scopes
  * and request scopes into the container before anything useful is done within the container using these
- * scopes.<br/>
+ * scopes.<br></br>
  * In the extender context, the current context is identified by an object. Therefore as long as the object
  * passed is the same, contexts are handled as such.
  *

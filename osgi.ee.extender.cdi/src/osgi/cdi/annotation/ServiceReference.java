@@ -29,22 +29,26 @@ import javax.inject.Qualifier;
  * May refer to either (1) a normal object, (2) a collection of objects or (3) an array of
  * objects. The first 2 variants are backed via proxies, the 3rd variant is a snapshot taken
  * from the list of services at the time of bean instantiation.
- * 
+ *
  * @author Arie van Wijngaarden
  */
 @Qualifier
 @Target({ElementType.FIELD, ElementType.CONSTRUCTOR, ElementType.METHOD, ElementType.PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ServiceReference {
-    /** 
-     * The OSGi filter to apply to the lookup via a ServiceTracker. 
+    /**
+     * The OSGi filter to apply to the lookup via a ServiceTracker.
      * Normal OSGi LDAP specification. The objectClass part of the filter is automatically
      * determined based on the type of the injection point.
-     */ 
+     *
+     * @return The filter in standard OSGi filter layout
+     */
     String filter() default "";
     /**
      * The time, in ms, to wait for a service to become available. Defaults depend on whether a collection
      * or an object is used (the object waits some time, the collection doesn't).
+     *
+     * @return The timeout, in ms
      */
     long timeout() default Long.MIN_VALUE;
 }

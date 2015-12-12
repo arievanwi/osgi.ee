@@ -29,6 +29,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Service {
-    /** The properties as key=value that need to be set on the service */
+    /** @return The properties as key=value that need to be set on the service */
     String[] properties() default {};
 }

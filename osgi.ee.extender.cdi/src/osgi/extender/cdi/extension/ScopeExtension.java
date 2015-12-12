@@ -118,6 +118,8 @@ public class ScopeExtension implements Extension {
     
     /**
      * Destroy this extension. Removes the scope services.
+     * 
+     * @param shut The shutdown event
      */
     public void destroy(@Observes BeforeShutdown shut) {
         this.contexts.forEach((c) -> c.destroy());
