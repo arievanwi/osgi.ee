@@ -25,7 +25,6 @@ import org.jboss.weld.serialization.spi.ProxyServices;
 import org.osgi.framework.Bundle;
 
 import osgi.extender.cdi.Helper;
-import osgi.extender.cdi.DelegatingClassLoader;
 
 /**
  * Proxy service handling for proxying beans. Basically, proxying is done using the combination
@@ -33,7 +32,7 @@ import osgi.extender.cdi.DelegatingClassLoader;
  */
 class BundleProxyService implements ProxyServices {
     private Collection<ClassLoader> delegates;
-    
+
     BundleProxyService(Bundle extendedBundle) {
         delegates = new ArrayList<>();
         ClassLoader extendedBundleLoader = Helper.getWiring(extendedBundle).getClassLoader();
@@ -45,14 +44,15 @@ class BundleProxyService implements ProxyServices {
         delegates.addAll(found);
         delegates.add(extendedBundleLoader);
     }
-    
+
     @Override
     public void cleanup() {
+        // Nothing to clean.
     }
 
     @Override
     public ClassLoader getClassLoader(Class<?> beanType) {
-        return new DelegatingClassLoader(delegates);
+        return DelegatingClassLoader.from(delegates);
     }
 
     @Override

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package osgi.extender.cdi;
+package osgi.extender.cdi.weld;
 
 import java.io.IOException;
 import java.net.URL;
@@ -26,11 +26,11 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleWiring;
 
 /**
- * Service loader class loader: class loader that constructs a class loader from all
+ * Global bundle class loader: class loader that constructs a class loader from all
  * class loaders related to a bundle to find resources and classes that may otherwise
  * go unnoticed.
  */
-class DelegatingClassLoader extends ClassLoader {
+public class DelegatingClassLoader extends ClassLoader {
     private ClassLoader delegate;
 
     private DelegatingClassLoader(ClassLoader parent, ClassLoader delegate) {

@@ -41,7 +41,7 @@ import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 import osgi.extender.cdi.Helper;
-import osgi.extender.cdi.DelegatingClassLoader;
+import osgi.extender.cdi.weld.DelegatingClassLoader;
 
 /**
  * Tracker of a specific service type and filter. Takes care of various types that
@@ -75,7 +75,7 @@ class Tracker<T> {
         Filter filter = getFilter(type, subfilter);
         // Create a new proxy for this type. This proxy is used if a normal object is referenced.
         proxy = type.cast(Proxy.newProxyInstance(
-                new DelegatingClassLoader(Arrays.asList(wiring.getClassLoader(), type.getClassLoader())),
+                DelegatingClassLoader.from(Arrays.asList(wiring.getClassLoader(), type.getClassLoader())),
                 new Class<?>[]{type},
                 new Wrapper<>(this::_getService)));
         // Construct the container for the tracked services that is i.e. returned by the collections variant.

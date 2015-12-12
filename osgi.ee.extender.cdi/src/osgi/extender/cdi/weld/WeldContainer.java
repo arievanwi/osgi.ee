@@ -17,8 +17,10 @@
 package osgi.extender.cdi.weld;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.ServiceLoader;
 import java.util.stream.Collectors;
 
 import javax.enterprise.inject.spi.BeanManager;
@@ -31,29 +33,32 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 import osgi.extender.cdi.extension.ComponentExtension;
+import osgi.extender.cdi.extension.OurMetaData;
 import osgi.extender.cdi.extension.ScopeExtension;
 import osgi.extender.cdi.extension.ServiceExtension;
-import osgi.extender.cdi.extension.OurMetaData;
 
 /**
  * Creator for a Weld container related to a specific bundle that is extended. Basically,
  * the holder of one extended bundle.
- * 
+ *
  * @author Arie van Wijngaarden
  */
 class WeldContainer {
     private WeldBootstrap boot;
     private Deployment deployment;
-    
+
     WeldContainer(Bundle toExtend) {
         boot = new WeldBootstrap();
         String contextName = "osgi-cdi:" + toExtend.getBundleId();
         // Construct our extension which does the main of the work.
         BundleContext context = toExtend.getBundleContext();
-        List<Extension> extensions = Arrays.asList(
+        List<Extension> extensions = new ArrayList<>(Arrays.asList(
                 new ScopeExtension(context),
                 new ServiceExtension(context),
-                new ComponentExtension());
+                new ComponentExtension()));
+        ServiceLoader<Extension> loader = ServiceLoader.load(Extension.class,
+                DelegatingClassLoader.from(toExtend));
+        loader.forEach((l) -> extensions.add(l));
         BeansXml beansXml = BeansXml.EMPTY_BEANS_XML;
         URL url = toExtend.getEntry("/META-INF/beans.xml");
         if (url != null) {
@@ -76,11 +81,11 @@ class WeldContainer {
         };
         new Thread(runner).start();
     }
-    
+
     BeanManager getManager() {
         return boot.getManager(deployment.getBeanDeploymentArchives().iterator().next());
     }
-    
+
     void destroy() {
         boot.shutdown();
     }
