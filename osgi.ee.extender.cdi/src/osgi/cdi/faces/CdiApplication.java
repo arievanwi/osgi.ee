@@ -207,6 +207,7 @@ class CdiApplication extends ApplicationWrapper {
 }
 
 class OurValidator implements Validator, Serializable {
+    private static final long serialVersionUID = 1L;
     private Validator delegate;
 
     OurValidator(Validator v) {

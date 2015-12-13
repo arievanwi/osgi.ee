@@ -20,16 +20,17 @@ import org.jboss.weld.bootstrap.spi.Metadata;
 
 /**
  * Meta data for our extension. IMHO a really unnecessary overhead.
+ * @param <T> The type of extension
  */
 public class OurMetaData<T> implements Metadata<T> {
     private String location;
     private T value;
-    
+
     public OurMetaData(String location, T value) {
         this.location = location;
         this.value = value;
     }
-    
+
     @Override
     public String getLocation() {
         return location;
