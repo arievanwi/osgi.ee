@@ -23,7 +23,8 @@ import javax.servlet.ServletRegistration;
 import javax.servlet.ServletSecurityElement;
 
 /**
- * Dynamic servlet registration.
+ * Dynamic servlet registration implementation. Extends a normal servlet registration with
+ * some additional functionality that has no use in this functionality.
  */
 public class DynamicSRegistration extends SRegistration implements ServletRegistration.Dynamic {
 

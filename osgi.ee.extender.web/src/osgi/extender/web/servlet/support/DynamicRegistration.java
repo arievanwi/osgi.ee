@@ -23,7 +23,8 @@ import java.util.stream.Collectors;
 import javax.servlet.Registration;
 
 /**
- * Registration of a specific object.
+ * Registration of a specific object. Used as a base for servlet and filter registrations.
+ *
  * @param <T> The type for which the registration takes place
  */
 public class DynamicRegistration<T> implements Registration {

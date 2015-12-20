@@ -63,10 +63,23 @@ class ServletContextParser {
         return context;
     }
 
+    /**
+     * Perform some actions with a specific elements set from the webapp definition.
+     *
+     * @param elements The elements from the web-app definition
+     * @param nameMatcher A matcher for the names
+     * @param acceptor The consumer of the matching elements
+     */
     private static void doWith(Collection<JAXBElement<?>> elements, Predicate<String> nameMatcher, Consumer<Object> acceptor) {
         elements.stream().filter((jbe) -> nameMatcher.test(jbe.getName().getLocalPart())).forEach((jbe) -> acceptor.accept(jbe.getValue()));
     }
 
+    /**
+     * Parse context parameters.
+     *
+     * @param elements The elements from the web definition
+     * @param handler The servlet context that will in the end contain the information
+     */
     private static void parseParameters(Collection<JAXBElement<?>> elements, OurServletContext handler) {
         doWith(elements, (name) -> "context-param".equals(name), (o) -> {
             ParamValueType parameter = (ParamValueType) o;
@@ -74,6 +87,13 @@ class ServletContextParser {
         });
     }
 
+    /**
+     * Parse the servlets from the context definition. This means: the definition of the servlet names and classes as well
+     * as the mapping that is present for the servlets.
+     *
+     * @param elements The web app elements
+     * @param handler The servlet context that accepts the information
+     */
     private static void parseServlets(Collection<JAXBElement<?>> elements, OurServletContext handler) {
         doWith(elements, (n) -> "servlet".equals(n), (o) -> {
            ServletType type = (ServletType) o;
@@ -83,11 +103,22 @@ class ServletContextParser {
         });
         doWith(elements, (n) -> "servlet-mapping".equals(n), (o) -> {
            ServletMappingType type = (ServletMappingType) o;
-           ServletRegistration reg = handler.getServletRegistration(type.getServletName().getValue());
+           String name = type.getServletName().getValue();
+           ServletRegistration reg = handler.getServletRegistration(name);
+           if (reg == null) {
+               throw new RuntimeException("invalid servlet-mapping definition: servlet \"" + name + "s\" not found");
+           }
            type.getUrlPattern().stream().map((ut) -> ut.getValue()).forEach((m) -> reg.addMapping(m));
         });
     }
 
+    /**
+     * Parse the filters from the context definition. This means: the filter names and classes as well as the mapping that is present
+     * for the filters (to either servlets or url paths).
+     *
+     * @param elements The web app definition elements
+     * @param handler The servlet context in which the definition is made
+     */
     private static void parseFilters(Collection<JAXBElement<?>> elements, OurServletContext handler) {
         doWith(elements, (n) -> "filter".equals(n), (o) -> {
            FilterType filterType = (FilterType) o;
@@ -98,7 +129,11 @@ class ServletContextParser {
         });
         doWith(elements, (n) -> "filter-mapping".equals(n), (o) -> {
             FilterMappingType mapping = (FilterMappingType) o;
-            FilterRegistration reg = handler.getFilterRegistration(mapping.getFilterName().getValue());
+            String name = mapping.getFilterName().getValue();
+            FilterRegistration reg = handler.getFilterRegistration(name);
+            if (reg == null) {
+                throw new RuntimeException("invalid filter-mapping definition: filter \"" + name + "\" not found");
+            }
             List<String> urlMappings = mapping.getUrlPatternOrServletName().stream().
                 filter((obj) -> UrlPatternType.class.isAssignableFrom(obj.getClass())).
                 map((c) -> UrlPatternType.class.cast(o)).map((c) -> c.getValue()).collect(Collectors.toList());
@@ -110,6 +145,13 @@ class ServletContextParser {
         });
     }
 
+    /**
+     * Parse a web-app definition file.
+     *
+     * @param url The URL pointing to the web-app definition
+     * @param handler The servlet context to fill
+     * @throws Exception In case of errors
+     */
     private static void parseFile(URL url, OurServletContext handler) throws Exception {
         JAXBContext context = JAXBContext.newInstance(WebAppType.class);
         Unmarshaller unm = context.createUnmarshaller();

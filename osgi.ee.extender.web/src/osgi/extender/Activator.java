@@ -22,6 +22,9 @@ import org.osgi.util.tracker.BundleTracker;
 
 import osgi.extender.web.service.WebBundleChangeListener;
 
+/**
+ * Activator that just starts up the bundle listener that tracks web application bundles.
+ */
 public class Activator implements BundleActivator {
     private BundleTracker<?> tracker;
 

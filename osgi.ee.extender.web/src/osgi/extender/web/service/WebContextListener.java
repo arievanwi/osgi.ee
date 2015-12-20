@@ -33,7 +33,10 @@ import osgi.extender.web.servlet.DispatchingServlet;
 import osgi.extender.web.servlet.OurServletContext;
 
 /**
- * Component that listens web context definitions to come up.
+ * Component that listens for web context definitions to come up. These definitions can either be defined through normal
+ * OSGi services or as a result of a WAB definition header in a bundle (which is picked up elsewhere in this bundle).
+ * The listener registers a dispatching servlet at a standard http service to delegate all handling of a web context via
+ * the components and classes in this bundle. The servlet is the main entry point for all requests made to the web context.
  */
 @Component
 public class WebContextListener {
@@ -42,10 +45,12 @@ public class WebContextListener {
 
     @Activate
     void activate(BundleContext context) {
+        // Track the web context definitions.
         tracker = new ServiceTracker<>(context, WebContextDefinition.class,
                 new ServiceTrackerCustomizer<WebContextDefinition, Context>() {
             @Override
             public Context addingService(ServiceReference<WebContextDefinition> ref) {
+                // Get the service.
                 WebContextDefinition definition = context.getService(ref);
                 if (definition == null) {
                     return null;
@@ -62,7 +67,7 @@ public class WebContextListener {
                 destroy(ctxt);
             }
         });
-        new Thread(() -> tracker.open()).start();;
+        new Thread(() -> tracker.open()).start();
     }
 
     @Deactivate
@@ -79,14 +84,13 @@ public class WebContextListener {
         return c.getContextPath() + "/*";
     }
 
-    void destroy(Context context) {
-        try {
-            httpService.unregister(path(context.servlet.getServletContext()));
-        } catch (Exception exc) {
-            exc.printStackTrace();
-        }
-    }
-
+    /**
+     * Create a context/servlet for a specific web context definition.
+     *
+     * @param bundle The bundle that originally registered the context definition
+     * @param def The definition itself
+     * @return A context or null if a severe error occurred
+     */
     Context create(Bundle bundle, WebContextDefinition def) {
         try {
             OurServletContext sc = ServletContextParser.create(bundle, def);
@@ -98,6 +102,20 @@ public class WebContextListener {
             return null;
         }
     }
+
+    /**
+     * Destroy a context. Normally done when a bundle stops or a service is unregistered.
+     *
+     * @param context The context to destroy
+     */
+    void destroy(Context context) {
+        try {
+            httpService.unregister(path(context.servlet.getServletContext()));
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
+    }
+
 
     static class Context {
         final DispatchingServlet servlet;

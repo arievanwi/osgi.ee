@@ -34,7 +34,9 @@ public class FRegistration extends DynamicRegistration<Filter> implements Filter
     private List<StringDispatcherPair> urlMapping = new ArrayList<>();
 
     private static void addTo(List<StringDispatcherPair> list, EnumSet<DispatcherType> types, boolean after, String... strings) {
-        List<StringDispatcherPair> toAdd = Arrays.asList(strings).stream().map((s) -> new StringDispatcherPair(s, types)).collect(Collectors.toList());
+        List<StringDispatcherPair> toAdd = Arrays.asList(strings).stream().
+                map((s) -> new StringDispatcherPair(s, types)).
+                collect(Collectors.toList());
         int index = after ? list.size() : 0;
         list.addAll(index, toAdd);
     }
