@@ -106,18 +106,18 @@ public class OurServletContext implements ServletContext {
             exc.printStackTrace();   // Won't happen
         }
         delegate = parent;
-        // Initialize the filters.
-        filters.values().forEach((f) -> {
+        // Initialize the servlets.
+        servlets.values().forEach((s) -> {
             try {
-                f.getObject().init(new RegistrationConfig(f, this));
+                s.getObject().init(new RegistrationConfig(s, this));
             } catch (Exception exc) {
                 exc.printStackTrace();
             }
         });
-        // And the servlets.
-        servlets.values().forEach((s) -> {
+        // And the filters.
+        filters.values().forEach((f) -> {
             try {
-                s.getObject().init(new RegistrationConfig(s, this));
+                f.getObject().init(new RegistrationConfig(f, this));
             } catch (Exception exc) {
                 exc.printStackTrace();
             }
@@ -128,6 +128,8 @@ public class OurServletContext implements ServletContext {
 
     void destroy() {
         ServletContextEvent event = new ServletContextEvent(this);
+        filters.values().forEach((f) -> f.getObject().destroy());
+        servlets.values().forEach((f) -> f.getObject().destroy());
         call(ServletContextListener.class, (l) -> l.contextDestroyed(event));
     }
 

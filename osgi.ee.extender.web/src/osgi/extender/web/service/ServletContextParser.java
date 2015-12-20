@@ -125,7 +125,6 @@ class ServletContextParser {
            FRegistration holder = handler.addFilter(filterType.getFilterName().getValue(), filterType.getFilterClass().getValue());
            filterType.getInitParam().forEach((parameter) ->
                holder.setInitParameter(parameter.getParamName().getValue(), parameter.getParamValue().getValue()));
-           holder.setAsyncSupported(filterType.getAsyncSupported().isValue());
         });
         doWith(elements, (n) -> "filter-mapping".equals(n), (o) -> {
             FilterMappingType mapping = (FilterMappingType) o;
@@ -136,7 +135,7 @@ class ServletContextParser {
             }
             List<String> urlMappings = mapping.getUrlPatternOrServletName().stream().
                 filter((obj) -> UrlPatternType.class.isAssignableFrom(obj.getClass())).
-                map((c) -> UrlPatternType.class.cast(o)).map((c) -> c.getValue()).collect(Collectors.toList());
+                map((c) -> UrlPatternType.class.cast(c)).map((c) -> c.getValue()).collect(Collectors.toList());
             reg.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, urlMappings.toArray(new String[urlMappings.size()]));
             List<String> servletMappings = mapping.getUrlPatternOrServletName().stream().
                     filter((obj) -> ServletNameType.class.isAssignableFrom(obj.getClass())).
