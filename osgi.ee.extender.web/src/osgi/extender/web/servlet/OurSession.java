@@ -200,7 +200,7 @@ class OurSession implements HttpSession, HttpSessionBindingListener {
 
     @Override
     public void setMaxInactiveInterval(int interval) {
-        maxInactive = interval;
+        maxInactive = interval < 0 ? 3000 : interval;
         if (parent.getMaxInactiveInterval() < maxInactive) {
             parent.setMaxInactiveInterval(maxInactive);
         }

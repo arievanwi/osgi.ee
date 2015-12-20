@@ -60,7 +60,6 @@ class OurServletRequest extends HttpServletRequestWrapper {
         return getSession(true);
     }
 
-
     @Override
     public ServletContext getServletContext() {
         return context;
@@ -75,7 +74,7 @@ class OurServletRequest extends HttpServletRequestWrapper {
         // Check if we have our session there.
         String key = OurSession.sessionKey(context);
         OurSession ours = (OurSession) session.getAttribute(key);
-        if (ours == null) {
+        if (ours == null || !ours.isValid()) {
             if (create) {
                 ours = new OurSession(context, session);
                 session.setAttribute(key, ours);

@@ -16,6 +16,7 @@
 package osgi.extender.web.servlet.support;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,7 +30,7 @@ import javax.servlet.Registration;
  */
 public class DynamicRegistration<T> implements Registration {
     private String registrationName;
-    private Map<String, String> initParameters;
+    private Map<String, String> initParameters = new HashMap<>();
     private T object;
     private boolean async;
 
@@ -94,5 +95,10 @@ public class DynamicRegistration<T> implements Registration {
 
     public boolean isAsyncSupported() {
         return this.async;
+    }
+
+    @Override
+    public String toString() {
+        return getName() + " - " + getObject();
     }
 }

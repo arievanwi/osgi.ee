@@ -107,6 +107,8 @@ public class OurServletContext implements ServletContext {
         }
         delegate = parent;
         // Initialize the servlets.
+        ServletContextEvent event = new ServletContextEvent(this);
+        call(ServletContextListener.class, (l) -> l.contextInitialized(event));
         servlets.values().forEach((s) -> {
             try {
                 s.getObject().init(new RegistrationConfig(s, this));
@@ -122,8 +124,6 @@ public class OurServletContext implements ServletContext {
                 exc.printStackTrace();
             }
         });
-        ServletContextEvent event = new ServletContextEvent(this);
-        call(ServletContextListener.class, (l) -> l.contextInitialized(event));
     }
 
     void destroy() {
@@ -292,7 +292,7 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public String getMimeType(String s) {
-        return null;
+        return delegate.getMimeType(s);
     }
 
     @Override
@@ -332,7 +332,10 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public URL getResource(String name) throws MalformedURLException {
-        return new URL(owner.getResource(resourceBase), name);
+        if (resourceBase == null) {
+            return null;
+        }
+        return owner.getEntry(resourceBase + "/" + name);
     }
 
     @Override
