@@ -1,0 +1,108 @@
+/*
+ * Copyright 2015, aVineas IT Consulting
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package osgi.extender.web.service;
+
+import javax.servlet.ServletContext;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.http.HttpService;
+import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
+
+import osgi.extender.web.WebContextDefinition;
+import osgi.extender.web.servlet.DispatchingServlet;
+import osgi.extender.web.servlet.OurServletContext;
+
+/**
+ * Component that listens web context definitions to come up.
+ */
+@Component
+public class WebContextListener {
+    private HttpService httpService;
+    private ServiceTracker<WebContextDefinition, Context> tracker;
+
+    @Activate
+    void activate(BundleContext context) {
+        tracker = new ServiceTracker<>(context, WebContextDefinition.class,
+                new ServiceTrackerCustomizer<WebContextDefinition, Context>() {
+            @Override
+            public Context addingService(ServiceReference<WebContextDefinition> ref) {
+                WebContextDefinition definition = context.getService(ref);
+                if (definition == null) {
+                    return null;
+                }
+                // Construct the servlet from this service.
+                Context ctx = create(ref.getBundle(), definition);
+                return ctx;
+            }
+            @Override
+            public void modifiedService(ServiceReference<WebContextDefinition> ref, Context ctxt) {
+            }
+            @Override
+            public void removedService(ServiceReference<WebContextDefinition> ref, Context ctxt) {
+                destroy(ctxt);
+            }
+        });
+        new Thread(() -> tracker.open()).start();;
+    }
+
+    @Deactivate
+    void destroy() {
+        tracker.close();
+    }
+
+    @Reference
+    void bindHttpService(HttpService service) {
+        httpService = service;
+    }
+
+    private static String path(ServletContext c) {
+        return c.getContextPath() + "/*";
+    }
+
+    void destroy(Context context) {
+        try {
+            httpService.unregister(path(context.servlet.getServletContext()));
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
+    }
+
+    Context create(Bundle bundle, WebContextDefinition def) {
+        try {
+            OurServletContext sc = ServletContextParser.create(bundle, def);
+            DispatchingServlet servlet = new DispatchingServlet(sc);
+            httpService.registerServlet(path(sc), servlet, null, null);
+            return new Context(servlet);
+        } catch (Exception exc) {
+            exc.printStackTrace();
+            return null;
+        }
+    }
+
+    static class Context {
+        final DispatchingServlet servlet;
+        Context(DispatchingServlet s) {
+            servlet = s;
+        }
+    }
+}

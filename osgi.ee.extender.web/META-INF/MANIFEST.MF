@@ -1,0 +1,24 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Web extender
+Bundle-SymbolicName: osgi.ee.extender.web
+Bundle-Version: 1.0.0
+Bundle-Activator: osgi.extender.Activator
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Import-Package: javax.servlet;version="3.1.0",
+ javax.servlet.annotation;version="3.1.0",
+ javax.servlet.descriptor;version="2.6.0",
+ javax.servlet.http;version="3.1.0",
+ javax.xml.bind,
+ org.eclipse.jetty.server;version="9.3.4",
+ org.eclipse.jetty.server.handler;version="9.3.4",
+ org.eclipse.jetty.servlet;version="9.3.4",
+ org.eclipse.jetty.util;version="9.3.4",
+ org.eclipse.jetty.util.component;version="9.3.4",
+ org.osgi.framework;version="1.8.0",
+ org.osgi.framework.wiring;version="1.2.0",
+ org.osgi.service.component.annotations;version="1.2.0";resolution:=optional,
+ org.osgi.service.http;version="1.2.1",
+ org.osgi.util.tracker;version="1.5.1"
+Service-Component: OSGI-INF/osgi.extender.web.service.WebContextListener.xml
+Export-Package: osgi.extender.web;version="1.0.0"
