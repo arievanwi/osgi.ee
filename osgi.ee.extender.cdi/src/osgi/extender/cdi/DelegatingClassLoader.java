@@ -17,20 +17,24 @@ package osgi.extender.cdi;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Iterator;
-import java.util.stream.Collectors;
+import java.util.List;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleWiring;
 
 /**
- * Service loader class loader: class loader that constructs a class loader from all
+ * Global bundle class loader: class loader that constructs a class loader from all
  * class loaders related to a bundle to find resources and classes that may otherwise
  * go unnoticed.
+ *
+ * Note that this class loader is as copy available in the web extender bundle. Any changes here must
+ * reflect there as well (they are not shared).
  */
-class DelegatingClassLoader extends ClassLoader {
+public class DelegatingClassLoader extends ClassLoader {
     private ClassLoader delegate;
 
     private DelegatingClassLoader(ClassLoader parent, ClassLoader delegate) {
@@ -83,9 +87,11 @@ class DelegatingClassLoader extends ClassLoader {
      */
     public static ClassLoader from(Bundle bundle) {
         BundleWiring wiring = bundle.adapt(BundleWiring.class);
-        Collection<ClassLoader> dependencies = wiring.getRequiredWires(null).stream().
+        List<ClassLoader> loaders = new ArrayList<>();
+        loaders.add(wiring.getClassLoader());
+        wiring.getRequiredWires(null).stream().
                 map((w) -> w.getProvider().getBundle().adapt(BundleWiring.class).getClassLoader()).distinct().
-                collect(Collectors.toList());
-        return from(dependencies);
+                forEach((l) -> loaders.add(l));
+        return from(loaders);
     }
 }

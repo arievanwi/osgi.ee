@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.jboss.weld.serialization.spi.ProxyServices;
 import org.osgi.framework.Bundle;
 
+import osgi.extender.cdi.DelegatingClassLoader;
 import osgi.extender.cdi.Helper;
 
 /**

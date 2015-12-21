@@ -40,8 +40,8 @@ import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
+import osgi.extender.cdi.DelegatingClassLoader;
 import osgi.extender.cdi.Helper;
-import osgi.extender.cdi.weld.DelegatingClassLoader;
 
 /**
  * Tracker of a specific service type and filter. Takes care of various types that

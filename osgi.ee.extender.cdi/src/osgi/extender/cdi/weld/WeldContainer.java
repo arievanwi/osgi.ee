@@ -32,6 +32,7 @@ import org.jboss.weld.bootstrap.spi.Deployment;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
+import osgi.extender.cdi.DelegatingClassLoader;
 import osgi.extender.cdi.extension.ComponentExtension;
 import osgi.extender.cdi.extension.OurMetaData;
 import osgi.extender.cdi.extension.ScopeExtension;
