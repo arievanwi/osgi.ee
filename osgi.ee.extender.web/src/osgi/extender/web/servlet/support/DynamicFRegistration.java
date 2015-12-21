@@ -15,10 +15,15 @@
  */
 package osgi.extender.web.servlet.support;
 
+import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
 
 /**
  * All is already in the base, so no need for additional stuff.
  */
 public class DynamicFRegistration extends FRegistration implements FilterRegistration.Dynamic {
+    public DynamicFRegistration(String name, Filter f) {
+        setName(name);
+        setObject(f);
+    }
 }

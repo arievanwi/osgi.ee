@@ -22,16 +22,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.EventListener;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterRegistration;
@@ -48,6 +51,9 @@ import javax.servlet.ServletRequestAttributeListener;
 import javax.servlet.ServletRequestListener;
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
+import javax.servlet.annotation.WebFilter;
+import javax.servlet.annotation.WebInitParam;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpSessionAttributeListener;
 import javax.servlet.http.HttpSessionListener;
@@ -56,15 +62,18 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.util.tracker.ServiceTracker;
+import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 import osgi.extender.helpers.DelegatingClassLoader;
+import osgi.extender.web.WebContextDefinition;
 import osgi.extender.web.servlet.support.DynamicFRegistration;
+import osgi.extender.web.servlet.support.DynamicRegistration;
 import osgi.extender.web.servlet.support.DynamicSRegistration;
 
-
 /**
- * Implementation of a servlet context that maintains the information for our delegating servlet. It manages all
- * context specific actions, like filter and servlet management, event handling, etc.
+ * Servlet context that acts on behalf of a web-app definition within a bundle. It performs all actions for
+ * a normal servlet context but takes the specific requirements of a bundle/WAB into account. As such it performs additional
+ * functionality by calling registered services at specific moments in time, like event handling.
  */
 public class OurServletContext implements ServletContext {
     private ServletContext delegate;
@@ -79,8 +88,17 @@ public class OurServletContext implements ServletContext {
     private Map<String, DynamicFRegistration> filters = new HashMap<>();
     private Map<String, DynamicSRegistration> servlets = new HashMap<>();
     private Collection<EventListener> listeners = new ArrayList<>();
-    private ServiceTracker<EventListener, EventListener> tracker;
+    private ServiceTracker<EventListener, EventListener> eventListenerTracker;
+    private ServiceTracker<Filter, String> filterTracker;
+    private ServiceTracker<Servlet, String> servletTracker;
 
+    /**
+     * Base constructor, so specialities
+     *
+     * @param bundle The bundle this context is defined for. This determines the class loader
+     * @param context The context on which this servlet context runs, like "/Test"
+     * @param resourceBase The base path in the bundle that is used for resource resolving
+     */
     public OurServletContext(Bundle bundle, String context, String resourceBase) {
         owner = bundle;
         classLoader = DelegatingClassLoader.from(bundle);
@@ -89,50 +107,71 @@ public class OurServletContext implements ServletContext {
         if (resourceBase != null && resourceBase.endsWith("/")) {
             this.resourceBase = resourceBase.substring(0, resourceBase.length() - 1);
         }
+        // Required for a WAB according to the specification.
         setAttribute("osgi-bundlecontext", bundle.getBundleContext());
     }
 
+    /**
+     * Init method called by the main servlet when the wrapping servlet is initialized. This means that the context is
+     * taken into service by the system.
+     *
+     * @param parent The parent servlet context. Just for some delegation actions
+     */
     void init(ServletContext parent) {
-        BundleContext bc = getOwner().getBundleContext();
+        // Set up the tracking of event listeners.
         Collection<Class<? extends EventListener>> toTrack = Arrays.asList(HttpSessionListener.class,
                 ServletRequestListener.class, HttpSessionAttributeListener.class, ServletRequestAttributeListener.class,
                 ServletContextListener.class);
-        Collection<String> objectFilters = toTrack.stream().map((c) -> "(" + Constants.OBJECTCLASS + "=" + c.getName() + ")").collect(Collectors.toList());
-        String filterString = "(&" + String.join("", objectFilters) + ")";
-        try {
-            tracker = new ServiceTracker<>(bc, bc.createFilter(filterString), null);
-            tracker.open();
-        } catch (Exception exc) {
-            exc.printStackTrace();   // Won't happen
-        }
+        Collection<String> objectFilters = toTrack.stream().
+                map((c) -> "(" + Constants.OBJECTCLASS + "=" + c.getName() + ")").collect(Collectors.toList());
+        String filterString = "|" + String.join("", objectFilters);
+        eventListenerTracker = startTracking(filterString, null);
         delegate = parent;
         // Initialize the servlets.
         ServletContextEvent event = new ServletContextEvent(this);
         call(ServletContextListener.class, (l) -> l.contextInitialized(event));
-        servlets.values().forEach((s) -> {
-            try {
-                s.getObject().init(new RegistrationConfig(s, this));
-            } catch (Exception exc) {
-                exc.printStackTrace();
-            }
-        });
+        servlets.values().forEach((s) -> init(s));
         // And the filters.
-        filters.values().forEach((f) -> {
-            try {
-                f.getObject().init(new RegistrationConfig(f, this));
-            } catch (Exception exc) {
-                exc.printStackTrace();
-            }
-        });
+        filters.values().forEach((f) -> init(f));
+        // Set up the tracking of servlets and filters.
+        BundleContext bc = getOwner().getBundleContext();
+        servletTracker = startTracking(Constants.OBJECTCLASS + "=" + Servlet.class.getName(),
+                new Tracker<Servlet>(bc, this::addServlet, this::removeServlet));
+        filterTracker = startTracking(Constants.OBJECTCLASS + "=" + Filter.class.getName(),
+                new Tracker<Filter>(bc, this::addFilter, this::removeFilter));
     }
 
+    /**
+     * Destroy the current context. Called by the servlet when it is taken out of service.
+     */
     void destroy() {
+        new ArrayList<>(filters.values()).forEach(this::destroy);
+        new ArrayList<>(servlets.values()).forEach(this::destroy);
+        filterTracker.close();
+        servletTracker.close();
         ServletContextEvent event = new ServletContextEvent(this);
-        filters.values().forEach((f) -> f.getObject().destroy());
-        servlets.values().forEach((f) -> f.getObject().destroy());
         call(ServletContextListener.class, (l) -> l.contextDestroyed(event));
+        eventListenerTracker.close();
     }
 
+    private <T, C> ServiceTracker<T, C> startTracking(String filter, ServiceTrackerCustomizer<T, C> cust) {
+        try {
+            BundleContext bc = getOwner().getBundleContext();
+            String filterString = "(&(" + filter + ")" + contextFilter(getContextPath()) + ")";
+            ServiceTracker<T, C> tracker = new ServiceTracker<>(bc, bc.createFilter(filterString), cust);
+            tracker.open();
+            return tracker;
+        } catch (Exception exc) {
+            throw new RuntimeException(exc);
+        }
+    }
+
+    /**
+     * Create an instance of a class can convert any exceptions into runtime exceptions (since they should never occur).
+     *
+     * @param clz The class to instantiate
+     * @return The created instance
+     */
     private static <T> T instance(Class<? extends T> clz) {
         try {
             T constructed = clz.newInstance();
@@ -143,11 +182,27 @@ public class OurServletContext implements ServletContext {
         }
     }
 
+    /**
+     * Create an instance of a class and apply a function on the constructed object. The returned value of the
+     * function is returned to the caller.
+     *
+     * @param clz The class to instantiate
+     * @param function The function to execute on it
+     * @return The returned value from the function
+     */
     private static <T, O> O instance(Class<? extends T> clz, Function<T, O> function) {
         T constructed = instance(clz);
         return function.apply(constructed);
     }
 
+    /**
+     * Instance creation from a class name. Is like the other methods above, but first the class is loaded
+     * with the constructed class loader of this conttext.
+     *
+     * @param className The class name to load
+     * @param function  The function to apply
+     * @return The return value of the function
+     */
     private <T, O> O instance(String className, Function<T, O> function) {
         try {
             @SuppressWarnings("unchecked")
@@ -158,17 +213,56 @@ public class OurServletContext implements ServletContext {
         }
     }
 
-    private Function<Filter, DynamicFRegistration> filterAdder(String name) {
-        return (f) -> {
-            if (delegate != null) {
-                throw new IllegalStateException("cannot add filters when initialization is complete");
+    /**
+     * Perform adding a specific web object to a managed set.
+     *
+     * @param name The name by which the web object is known
+     * @param container The map containing the values
+     * @param supplier The supplier that converts a string/object combination to a registration object
+     * @param init The consumer to invoke for inialization
+     * @return The adding function, to be used in the various variants of add...
+     */
+    private <T, R extends DynamicRegistration<T>> Function<T, R> adderFunction(
+            String name, Map<String, R> container, BiFunction<String, T, R> supplier, Consumer<R> init) {
+        return (o) -> {
+            if (container.containsKey(name)) {
+                return null;
             }
-            DynamicFRegistration reg = new DynamicFRegistration();
-            reg.setObject(f);
-            reg.setName(name);
-            filters.put(name, reg);
+            R reg = supplier.apply(name, o);
+            container.put(name, reg);
+            if (delegate != null) {
+                init.accept(reg);
+            }
             return reg;
         };
+    }
+
+    private void init(DynamicFRegistration filter) {
+        try {
+            filter.getObject().init(new RegistrationConfig(filter, this));
+            log("filter: " + filter + " initialized");
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
+    }
+
+    private void destroy(DynamicFRegistration filter) {
+        if (filter == null) {
+            return;
+        }
+        filter.getObject().destroy();
+        filters.remove(filter.getName());
+        log("filter: " + filter + " initialized");
+    }
+
+    /**
+     * Function that adds a filter by a specific name and returns the filter registration.
+     *
+     * @param name The name of the filter
+     * @return The function that converts a filter into a dynamic filter registration
+     */
+    private Function<Filter, DynamicFRegistration> filterAdder(String name) {
+        return adderFunction(name, filters, DynamicFRegistration::new, this::init);
     }
 
     @Override
@@ -184,6 +278,39 @@ public class OurServletContext implements ServletContext {
     @Override
     public DynamicFRegistration addFilter(String name, Class<? extends Filter> clz) {
         return instance(clz, filterAdder(name));
+    }
+
+    private static void doParameters(DynamicRegistration<?> reg, WebInitParam[] param) {
+        for (WebInitParam p : param) {
+            reg.setInitParameter(p.name(), p.value());
+        }
+    }
+
+    /**
+     * Method invoked for tracking filters that are registered via the OSGi service registry
+     *
+     * @param filter The filter to add
+     * @return The name of the filter, if added
+     */
+    private String addFilter(Filter filter) {
+        Class<?> clz = filter.getClass();
+        WebFilter ann = clz.getAnnotation(WebFilter.class);
+        if (ann == null) {
+            return null;
+        }
+        String name = ann.filterName();
+        DynamicFRegistration reg = addFilter(name, filter);
+        if (reg == null) {
+            return null;
+        }
+        reg.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, ann.urlPatterns());
+        reg.addMappingForServletNames(EnumSet.allOf(DispatcherType.class), false, ann.servletNames());
+        doParameters(reg, ann.initParams());
+        return name;
+    }
+
+    private void removeFilter(String name) {
+        destroy(filters.get(name));
     }
 
     private <T extends EventListener> Function<T, Void> listenerAdder() {
@@ -208,17 +335,33 @@ public class OurServletContext implements ServletContext {
         instance(clzName, listenerAdder());
     }
 
+    private void init(DynamicSRegistration servlet) {
+        try {
+            servlet.getObject().init(new RegistrationConfig(servlet, this));
+            log("servlet: " + servlet + " initialized");
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
+    }
+
+    private void destroy(DynamicSRegistration servlet) {
+        if (servlet == null) {
+            return;
+        }
+        servlet.getObject().destroy();
+        servlets.remove(servlet.getName());
+        log("servlet: " + servlet + " destroyed");
+    }
+
+    /**
+     * Return a function that converts a servlet into a registration. Is the function that is needed during the various
+     * servlet creation methods.
+     *
+     * @param name The servlet name
+     * @return The function to convert a servlet into a registration.
+     */
     private Function<Servlet, DynamicSRegistration> servletAdder(String name) {
-        return (s) -> {
-            if (delegate != null) {
-                throw new IllegalStateException("cannot add servlets when initialization is complete");
-            }
-            DynamicSRegistration reg = new DynamicSRegistration();
-            reg.setObject(s);
-            reg.setName(name);
-            servlets.put(name, reg);
-            return reg;
-        };
+        return adderFunction(name, servlets, DynamicSRegistration::new, this::init);
     }
 
     @Override
@@ -249,6 +392,26 @@ public class OurServletContext implements ServletContext {
     @Override
     public <T extends Servlet> T createServlet(Class<T> clz) throws ServletException {
         return instance(clz);
+    }
+
+    private String addServlet(Servlet servlet) {
+        Class<?> clz = servlet.getClass();
+        WebServlet ann = clz.getAnnotation(WebServlet.class);
+        if (ann == null) {
+            return null;
+        }
+        String name = ann.name();
+        DynamicSRegistration reg = addServlet(name, servlet);
+        if (reg == null) {
+            return null;
+        }
+        doParameters(reg, ann.initParams());
+        reg.addMapping(ann.urlPatterns());
+        return name;
+    }
+
+    private void removeServlet(String name) {
+        destroy(servlets.get(name));
     }
 
     @Override
@@ -312,12 +475,13 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public JspConfigDescriptor getJspConfigDescriptor() {
+        // We don't support JSP.
         return null;
     }
 
     @Override
     public RequestDispatcher getNamedDispatcher(String disp) {
-        return null;
+        return delegate.getNamedDispatcher(disp);
     }
 
     @Override
@@ -327,7 +491,7 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public RequestDispatcher getRequestDispatcher(String path) {
-        return null;
+        return delegate.getRequestDispatcher(path);
     }
 
     @Override
@@ -413,7 +577,7 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public void log(String s) {
-        delegate.log(s);
+        delegate.log(toString() + ": " + s);
     }
 
     @Deprecated
@@ -424,7 +588,7 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public void log(String string, Throwable thr) {
-        delegate.log(string, thr);
+        delegate.log(toString() + ": " + string, thr);
     }
 
     @Override
@@ -495,8 +659,8 @@ public class OurServletContext implements ServletContext {
     <T extends EventListener> void call(Class<T> type, Consumer<T> cons) {
         List<EventListener> allListeners = new ArrayList<>();
         allListeners.addAll(listeners);
-        if (tracker != null) {
-            allListeners.addAll(tracker.getTracked().values());
+        if (eventListenerTracker != null) {
+            allListeners.addAll(eventListenerTracker.getTracked().values());
         }
         allListeners.stream().filter((l) -> type.isAssignableFrom(l.getClass())).map((l) -> type.cast(l)).forEach((l) -> {
             try {
@@ -521,6 +685,16 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public String toString() {
-        return "OSGi WAB Extender servlet context for \"" + getContextPath() + "\"";
+        return "WebContext " + getContextPath();
+    }
+
+    /**
+     * Create a web context filter: meaning either the web context is not specified or it is the one passed.
+     *
+     * @param path The path to check
+     * @return A string with the OSGi filter
+     */
+    private static final String contextFilter(String path) {
+        return "(|(!(" + WebContextDefinition.WEBCONTEXTPATH + "=*))(" + WebContextDefinition.WEBCONTEXTPATH + "=" + path + "))";
     }
 }

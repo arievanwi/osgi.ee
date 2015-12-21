@@ -26,6 +26,8 @@ import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
+import javax.servlet.ServletRequestEvent;
+import javax.servlet.ServletRequestListener;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -50,13 +52,13 @@ public class DispatchingServlet implements Servlet {
         servletContext = ctx;
     }
 
-    private void doWithClassLoader(Runner actions) {
+    private void doWithClassLoader(Runner actions) throws ServletException {
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(servletContext.getClassLoader());
             actions.run();
         } catch (Exception exc) {
-            throw new RuntimeException(exc);
+            throw new ServletException(exc);
         }
         finally {
             Thread.currentThread().setContextClassLoader(loader);
@@ -81,7 +83,11 @@ public class DispatchingServlet implements Servlet {
             registration.unregister();
         } catch (Exception exc) {}
         // Send the context destroyed event to all applicable listeners.
-        doWithClassLoader(() -> servletContext.destroy());
+        try {
+            doWithClassLoader(() -> servletContext.destroy());
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
         servletContext.log("context \"" + servletContext.getContextPath() + "\" destroyed");
     }
 
@@ -120,7 +126,13 @@ public class DispatchingServlet implements Servlet {
         String pathInfo = subpath.substring(servletPath.length());
         OurServletRequest req = new OurServletRequest(request, servletContext, servletPath.toString(), pathInfo);
         // Put down the chain.
-        doWithClassLoader(() -> chain.doFilter(req, response));
+        ServletRequestEvent event = new ServletRequestEvent(servletContext, req);
+        try {
+            servletContext.call(ServletRequestListener.class, (l) -> l.requestInitialized(event));
+            doWithClassLoader(() -> chain.doFilter(req, response));
+        } finally {
+            servletContext.call(ServletRequestListener.class, (l) -> l.requestDestroyed(event));
+        }
     }
 
     /**
@@ -157,7 +169,8 @@ public class DispatchingServlet implements Servlet {
             dict.put("osgi.web.version", version);
         }
         dict.put("osgi.web.contextpath", context.getContextPath());
-        ServiceRegistration<ServletContext> registration = context.getOwner().getBundleContext().registerService(ServletContext.class, context, dict);
+        ServiceRegistration<ServletContext> registration =
+                context.getOwner().getBundleContext().registerService(ServletContext.class, context, dict);
         return registration;
     }
 }

@@ -30,6 +30,9 @@ import org.osgi.framework.wiring.BundleWiring;
  * Service loader class loader: class loader that constructs a class loader from all
  * class loaders related to a bundle to find resources and classes that may otherwise
  * go unnoticed.
+ *
+ * Note that this class loader is as copy available in the CDI extender bundle. Any changes here must
+ * reflect there as well (they are not shared).
  */
 public class DelegatingClassLoader extends ClassLoader {
     private ClassLoader delegate;

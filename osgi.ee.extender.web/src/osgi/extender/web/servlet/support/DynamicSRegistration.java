@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.Servlet;
 import javax.servlet.ServletRegistration;
 import javax.servlet.ServletSecurityElement;
 
@@ -27,6 +28,11 @@ import javax.servlet.ServletSecurityElement;
  * some additional functionality that has no use in this functionality.
  */
 public class DynamicSRegistration extends SRegistration implements ServletRegistration.Dynamic {
+
+    public DynamicSRegistration(String name, Servlet servlet) {
+        setName(name);
+        setObject(servlet);
+    }
 
     @Override
     public void setLoadOnStartup(int los) {

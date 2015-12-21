@@ -22,6 +22,10 @@ package osgi.extender.web;
  */
 public interface WebContextDefinition {
     /**
+     * The service property that determines the context path. Used on services to limit the contexts they are called for
+     */
+    public static final String WEBCONTEXTPATH = "web-context";
+    /**
      * Get the context path of this web context. Is the first part of the URL that can be used to access the web
      * application.
      *
