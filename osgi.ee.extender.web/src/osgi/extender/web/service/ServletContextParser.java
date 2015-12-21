@@ -16,9 +16,12 @@
 package osgi.extender.web.service;
 
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -30,6 +33,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Unmarshaller;
 
+import org.jcp.xmlns.xml.ns.javaee.ErrorPageType;
 import org.jcp.xmlns.xml.ns.javaee.FilterMappingType;
 import org.jcp.xmlns.xml.ns.javaee.FilterType;
 import org.jcp.xmlns.xml.ns.javaee.ParamValueType;
@@ -38,9 +42,11 @@ import org.jcp.xmlns.xml.ns.javaee.ServletNameType;
 import org.jcp.xmlns.xml.ns.javaee.ServletType;
 import org.jcp.xmlns.xml.ns.javaee.UrlPatternType;
 import org.jcp.xmlns.xml.ns.javaee.WebAppType;
+import org.jcp.xmlns.xml.ns.javaee.WelcomeFileListType;
 import org.osgi.framework.Bundle;
 
 import osgi.extender.web.WebContextDefinition;
+import osgi.extender.web.servlet.DispatchingServlet;
 import osgi.extender.web.servlet.OurServletContext;
 import osgi.extender.web.servlet.support.FRegistration;
 import osgi.extender.web.servlet.support.SRegistration;
@@ -51,16 +57,19 @@ import osgi.extender.web.servlet.support.SRegistration;
  * context from it containing the information.
  */
 class ServletContextParser {
-    static OurServletContext create(Bundle bundle, WebContextDefinition definition) throws Exception {
-        OurServletContext context = new OurServletContext(bundle, definition.getContextPath(), definition.getResourceBase());
+    static DispatchingServlet create(Bundle bundle, WebContextDefinition definition) throws Exception {
+        OurServletContext context = new OurServletContext(bundle, definition.getContextPath(),
+                definition.getResourceBase());
+        Map<String, String> errorPages = new HashMap<>();
+        List<String> welcomePages = new ArrayList<>();
         if (definition.getDefinition() != null) {
             URL webxml = bundle.getEntry(definition.getDefinition());
             if (webxml == null) {
                 throw new Exception("cannot find " + definition.getDefinition() + " for bundle: " + bundle);
             }
-            parseFile(webxml, context);
+            parseFile(webxml, context, welcomePages, errorPages);
         }
-        return context;
+        return new DispatchingServlet(context, welcomePages, errorPages);
     }
 
     /**
@@ -144,14 +153,40 @@ class ServletContextParser {
         });
     }
 
+    private static void parseWelcomeFiles(Collection<JAXBElement<?>> elements,
+            final Collection<String> welcomeFiles) {
+        doWith(elements, (n) -> "welcome-file-list".equals(n), (o) -> {
+            WelcomeFileListType welcomes = (WelcomeFileListType) o;
+            welcomeFiles.addAll(welcomes.getWelcomeFile());
+        });
+    }
+
+    private static void parseErrorPages(Collection<JAXBElement<?>> elements, Map<String, String> err) {
+        doWith(elements, (n) -> "error-page".equals(n), (o) -> {
+            ErrorPageType errors = (ErrorPageType) o;
+            String key;
+            if (errors.getErrorCode() != null) {
+                key = errors.getErrorCode().getValue().toString();
+            }
+            else {
+                key = errors.getExceptionType().getValue();
+            }
+            String location = errors.getLocation().getValue();
+            err.put(key, location);
+        });
+    }
+
     /**
      * Parse a web-app definition file.
      *
      * @param url The URL pointing to the web-app definition
      * @param handler The servlet context to fill
+     * @param welcomes The welcome file list, returned
+     * @param errorPages The error page mapping, returned
      * @throws Exception In case of errors
      */
-    private static void parseFile(URL url, OurServletContext handler) throws Exception {
+    private static void parseFile(URL url, OurServletContext handler, Collection<String> welcomes,
+            Map<String, String> errorPages) throws Exception {
         JAXBContext context = JAXBContext.newInstance(WebAppType.class);
         Unmarshaller unm = context.createUnmarshaller();
         JAXBElement<?> element = (JAXBElement<?>) unm.unmarshal(url);
@@ -160,5 +195,7 @@ class ServletContextParser {
         parseParameters(elements, handler);
         parseServlets(elements, handler);
         parseFilters(elements, handler);
+        parseWelcomeFiles(elements, welcomes);
+        parseErrorPages(elements, errorPages);
     }
 }

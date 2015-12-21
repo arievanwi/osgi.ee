@@ -30,7 +30,6 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 import osgi.extender.web.WebContextDefinition;
 import osgi.extender.web.servlet.DispatchingServlet;
-import osgi.extender.web.servlet.OurServletContext;
 
 /**
  * Component that listens for web context definitions to come up. These definitions can either be defined through normal
@@ -93,9 +92,8 @@ public class WebContextListener {
      */
     Context create(Bundle bundle, WebContextDefinition def) {
         try {
-            OurServletContext sc = ServletContextParser.create(bundle, def);
-            DispatchingServlet servlet = new DispatchingServlet(sc);
-            httpService.registerServlet(path(sc), servlet, null, null);
+            DispatchingServlet servlet = ServletContextParser.create(bundle, def);
+            httpService.registerServlet(path(servlet.getServletContext()), servlet, null, null);
             return new Context(servlet);
         } catch (Exception exc) {
             exc.printStackTrace();
@@ -115,7 +113,6 @@ public class WebContextListener {
             exc.printStackTrace();
         }
     }
-
 
     static class Context {
         final DispatchingServlet servlet;
