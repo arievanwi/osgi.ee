@@ -15,6 +15,8 @@
  */
 package osgi.extender.web.service;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -33,6 +35,10 @@ import javax.servlet.ServletRegistration;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 
 import org.jcp.xmlns.xml.ns.javaee.ErrorPageType;
 import org.jcp.xmlns.xml.ns.javaee.FilterMappingType;
@@ -199,10 +205,20 @@ class ServletContextParser {
      */
     private static void parseFile(URL url, OurServletContext handler, Collection<String> welcomes,
             Map<Integer, String> errorPages, Map<Class<?>, String> exceptionPages) throws Exception {
+        // We first do a transformation to allow acceptance of the old-style namespace for
+        // web applications.
+        String xslt = "/" + ServletContextParser.class.getPackage().getName().replace(".", "/") +
+                "/translatens.xsl";
+        Transformer trans = TransformerFactory.newInstance().newTransformer(
+                new StreamSource(ServletContextParser.class.getClassLoader().getResourceAsStream(xslt)));
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        trans.transform(new StreamSource(url.openStream()), new StreamResult(out));
+        // Do the JAXB parsing of the input.
         JAXBContext context = JAXBContext.newInstance(WebAppType.class);
         Unmarshaller unm = context.createUnmarshaller();
-        JAXBElement<?> element = (JAXBElement<?>) unm.unmarshal(url);
+        JAXBElement<?> element = (JAXBElement<?>) unm.unmarshal(new ByteArrayInputStream(out.toByteArray()));
         WebAppType type = (WebAppType) element.getValue();
+        // Process the elements.
         Collection<JAXBElement<?>> elements = type.getModuleNameOrDescriptionAndDisplayName();
         parseParameters(elements, handler);
         parseServlets(elements, handler);
