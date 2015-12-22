@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -60,16 +61,17 @@ class ServletContextParser {
     static DispatchingServlet create(Bundle bundle, WebContextDefinition definition) throws Exception {
         OurServletContext context = new OurServletContext(bundle, definition.getContextPath(),
                 definition.getResourceBase());
-        Map<String, String> errorPages = new HashMap<>();
+        Map<Integer, String> httpErrorPages = new HashMap<>();
+        Map<Class<?>, String> exceptionPages = new LinkedHashMap<>();
         List<String> welcomePages = new ArrayList<>();
         if (definition.getDefinition() != null) {
             URL webxml = bundle.getEntry(definition.getDefinition());
             if (webxml == null) {
                 throw new Exception("cannot find " + definition.getDefinition() + " for bundle: " + bundle);
             }
-            parseFile(webxml, context, welcomePages, errorPages);
+            parseFile(webxml, context, welcomePages, httpErrorPages, exceptionPages);
         }
-        return new DispatchingServlet(context, welcomePages, errorPages);
+        return new DispatchingServlet(context, welcomePages, httpErrorPages, exceptionPages);
     }
 
     /**
@@ -153,26 +155,35 @@ class ServletContextParser {
         });
     }
 
+    private static String parseLocation(String location) {
+        return location.startsWith("/") ? location : "/" + location;
+    }
+
     private static void parseWelcomeFiles(Collection<JAXBElement<?>> elements,
             final Collection<String> welcomeFiles) {
         doWith(elements, (n) -> "welcome-file-list".equals(n), (o) -> {
             WelcomeFileListType welcomes = (WelcomeFileListType) o;
-            welcomeFiles.addAll(welcomes.getWelcomeFile());
+            welcomes.getWelcomeFile().forEach((w) -> welcomeFiles.add(parseLocation(w)));
         });
     }
 
-    private static void parseErrorPages(Collection<JAXBElement<?>> elements, Map<String, String> err) {
+    private static void parseErrorPages(Collection<JAXBElement<?>> elements,
+            ClassLoader loader, Map<Integer, String> errorPages, Map<Class<?>, String> exceptionPages) {
         doWith(elements, (n) -> "error-page".equals(n), (o) -> {
             ErrorPageType errors = (ErrorPageType) o;
-            String key;
             if (errors.getErrorCode() != null) {
-                key = errors.getErrorCode().getValue().toString();
+                Integer key = new Integer(errors.getErrorCode().getValue().toString());
+                errorPages.put(key, parseLocation(errors.getLocation().getValue()));
             }
             else {
-                key = errors.getExceptionType().getValue();
+                Class<?> clz;
+                try {
+                    clz = loader.loadClass(errors.getExceptionType().getValue());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+                exceptionPages.put(clz, parseLocation(errors.getLocation().getValue()));
             }
-            String location = errors.getLocation().getValue();
-            err.put(key, location);
         });
     }
 
@@ -183,10 +194,11 @@ class ServletContextParser {
      * @param handler The servlet context to fill
      * @param welcomes The welcome file list, returned
      * @param errorPages The error page mapping, returned
+     * @param exceptionPages The exception page mapping, returned
      * @throws Exception In case of errors
      */
     private static void parseFile(URL url, OurServletContext handler, Collection<String> welcomes,
-            Map<String, String> errorPages) throws Exception {
+            Map<Integer, String> errorPages, Map<Class<?>, String> exceptionPages) throws Exception {
         JAXBContext context = JAXBContext.newInstance(WebAppType.class);
         Unmarshaller unm = context.createUnmarshaller();
         JAXBElement<?> element = (JAXBElement<?>) unm.unmarshal(url);
@@ -196,6 +208,6 @@ class ServletContextParser {
         parseServlets(elements, handler);
         parseFilters(elements, handler);
         parseWelcomeFiles(elements, welcomes);
-        parseErrorPages(elements, errorPages);
+        parseErrorPages(elements, handler.getClassLoader(), errorPages, exceptionPages);
     }
 }

@@ -25,17 +25,17 @@ import javax.servlet.http.HttpServletResponseWrapper;
  * Servlet response wrapper. Handles the error pages because of error setting, etc.
  */
 public class OurServletResponse extends HttpServletResponseWrapper {
-    private Map<String, String> errors;
+    private Map<Integer, String> errors;
     private String context;
 
-    public OurServletResponse(HttpServletResponse response, String context, Map<String, String> errors) {
+    public OurServletResponse(HttpServletResponse response, String context, Map<Integer, String> errors) {
         super(response);
         this.errors = errors;
         this.context = context;
     }
 
     private String codeToUrl(int code) {
-        String page = errors.get(new Integer(code).toString());
+        String page = errors.get(code);
         if (page != null) {
             try {
                 sendRedirect(context + page);

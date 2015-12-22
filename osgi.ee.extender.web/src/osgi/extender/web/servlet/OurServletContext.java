@@ -119,14 +119,16 @@ public class OurServletContext implements ServletContext {
      */
     void init(ServletContext parent) {
         // Set up the tracking of event listeners.
+        BundleContext bc = getOwner().getBundleContext();
+        delegate = parent;
         Collection<Class<? extends EventListener>> toTrack = Arrays.asList(HttpSessionListener.class,
                 ServletRequestListener.class, HttpSessionAttributeListener.class, ServletRequestAttributeListener.class,
                 ServletContextListener.class);
         Collection<String> objectFilters = toTrack.stream().
                 map((c) -> "(" + Constants.OBJECTCLASS + "=" + c.getName() + ")").collect(Collectors.toList());
         String filterString = "|" + String.join("", objectFilters);
-        eventListenerTracker = startTracking(filterString, null);
-        delegate = parent;
+        eventListenerTracker = startTracking(filterString,
+                new Tracker<EventListener, EventListener>(bc, getContextPath(), (e) -> e, (e) -> {}));
         // Initialize the servlets.
         ServletContextEvent event = new ServletContextEvent(this);
         call(ServletContextListener.class, (l) -> l.contextInitialized(event));
@@ -134,11 +136,10 @@ public class OurServletContext implements ServletContext {
         // And the filters.
         filters.values().forEach((f) -> init(f));
         // Set up the tracking of servlets and filters.
-        BundleContext bc = getOwner().getBundleContext();
         servletTracker = startTracking(Constants.OBJECTCLASS + "=" + Servlet.class.getName(),
-                new Tracker<Servlet>(bc, this::addServlet, this::removeServlet));
+                new Tracker<Servlet, String>(bc, getContextPath(), this::addServlet, this::removeServlet));
         filterTracker = startTracking(Constants.OBJECTCLASS + "=" + Filter.class.getName(),
-                new Tracker<Filter>(bc, this::addFilter, this::removeFilter));
+                new Tracker<Filter, String>(bc, getContextPath(), this::addFilter, this::removeFilter));
     }
 
     /**
@@ -157,7 +158,7 @@ public class OurServletContext implements ServletContext {
     private <T, C> ServiceTracker<T, C> startTracking(String filter, ServiceTrackerCustomizer<T, C> cust) {
         try {
             BundleContext bc = getOwner().getBundleContext();
-            String filterString = "(&(" + filter + ")" + contextFilter(getContextPath()) + ")";
+            String filterString = "(&(" + filter + ")(" + WebContextDefinition.WEBCONTEXTPATH + "=*))";
             ServiceTracker<T, C> tracker = new ServiceTracker<>(bc, bc.createFilter(filterString), cust);
             tracker.open();
             return tracker;
@@ -686,15 +687,5 @@ public class OurServletContext implements ServletContext {
     @Override
     public String toString() {
         return "WebContext " + getContextPath();
-    }
-
-    /**
-     * Create a web context filter: meaning either the web context is not specified or it is the one passed.
-     *
-     * @param path The path to check
-     * @return A string with the OSGi filter
-     */
-    private static final String contextFilter(String path) {
-        return "(|(!(" + WebContextDefinition.WEBCONTEXTPATH + "=*))(" + WebContextDefinition.WEBCONTEXTPATH + "=" + path + "))";
     }
 }

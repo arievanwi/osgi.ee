@@ -16,11 +16,14 @@
 package osgi.extender.web.servlet;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
 import java.util.Collection;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.Optional;
 import java.util.ServiceLoader;
-import java.util.stream.Collectors;
 
 import javax.servlet.FilterChain;
 import javax.servlet.Servlet;
@@ -51,21 +54,15 @@ public class DispatchingServlet implements Servlet {
     private OurServletContext servletContext;
     private ServiceRegistration<ServletContext> registration;
     private Collection<String> welcomePages;
-    private Map<String, String> errorPages;
-
-    private static String addRoot(String s) {
-        return s.startsWith("/") ? s : "/" + s;
-    }
+    private Map<Integer, String> errorPages;
+    private Map<Class<?>, String> exceptionPages;
 
     public DispatchingServlet(OurServletContext ctx, Collection<String> welcomes,
-            Map<String, String> errors) {
+            Map<Integer, String> errorPages, Map<Class<?>, String> exceptionPages) {
         servletContext = ctx;
-        welcomePages = welcomes.stream().
-                map(DispatchingServlet::addRoot).collect(Collectors.toList());
-        errorPages = errors.entrySet().stream().
-                map((e) -> { e.setValue(addRoot(e.getValue())); return e;} ).
-                collect(Collectors.toMap((e) -> e.getKey(), (e) -> e.getValue()));
-        errorPages = errors;
+        welcomePages = welcomes;
+        this.errorPages = errorPages;
+        this.exceptionPages = exceptionPages;
     }
 
     private void doWithClassLoader(Runner actions) throws ServletException {
@@ -135,7 +132,23 @@ public class DispatchingServlet implements Servlet {
         }
         // Is it the start and do we have welcome pages? Redirect to first page.
         if (subpath.equals("/") && welcomePages.size() > 0) {
-            response.sendRedirect(servletContext.getContextPath() + welcomePages.iterator().next());
+            String welcomeFile = welcomePages.iterator().next();
+            URL welcomePath = servletContext.getResource(welcomeFile);
+            if (welcomePath == null) {
+                // No resource. Just redirect to let it be handled by a servlet.
+                response.sendRedirect(servletContext.getContextPath() + welcomeFile);
+            }
+            else {
+                // Copy the file to the output.
+                try (InputStream in = welcomePath.openStream();
+                     OutputStream out = response.getOutputStream()){
+                    byte[] data = new byte[200];
+                    int size;
+                    while ((size = in.read(data)) > 0) {
+                        out.write(data, 0, size);
+                    }
+                }
+            }
             return;
         }
         // Use automatic handling of error pages from now on.
@@ -161,12 +174,15 @@ public class DispatchingServlet implements Servlet {
             while (root.getCause() != null && root.getCause() != root) {
                 root = root.getCause();
             }
-            String clz = root.getClass().getName();
-            String errorPage = errorPages.get(clz);
-            if (errorPage == null) {
+            Class<?> throwedClass = root.getClass();
+            Optional<String> errorPage =
+                    exceptionPages.entrySet().stream().
+                    filter((e) -> e.getKey().isAssignableFrom(throwedClass)).
+                    map((e) -> e.getValue()).findFirst();
+            if (!errorPage.isPresent()) {
                 throw exc;
             }
-            response.sendRedirect(servletContext.getContextPath() + errorPage);
+            response.sendRedirect(servletContext.getContextPath() + errorPage.get());
         }
         finally {
             servletContext.call(ServletRequestListener.class, (l) -> l.requestDestroyed(event));

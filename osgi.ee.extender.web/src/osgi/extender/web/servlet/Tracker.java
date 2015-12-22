@@ -17,33 +17,50 @@ package osgi.extender.web.servlet;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.regex.Pattern;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
+import osgi.extender.web.WebContextDefinition;
+
 /**
  * Tracker customizer for filters and servlets: picks up dynamically registered filters and adds them to the
  * context.
  */
-class Tracker<T> implements ServiceTrackerCustomizer<T, String> {
+class Tracker<T, R> implements ServiceTrackerCustomizer<T, R> {
     private BundleContext bundleContext;
-    private Function<T, String> adder;
-    private Consumer<String> remover;
+    private Function<T, R> adder;
+    private Consumer<R> remover;
+    private String context;
 
-    Tracker(BundleContext context, Function<T, String> adder, Consumer<String> remover) {
-        this.bundleContext = context;
+    Tracker(BundleContext bc, String context, Function<T, R> adder, Consumer<R> remover) {
+        this.bundleContext = bc;
         this.adder = adder;
         this.remover = remover;
+        this.context = context;
     }
 
     @Override
-    public String addingService(ServiceReference<T> ref) {
+    public R addingService(ServiceReference<T> ref) {
+        Object contextValue = ref.getProperty(WebContextDefinition.WEBCONTEXTPATH);
+        if (contextValue == null) {
+            return null;
+        }
+        try {
+            if (!Pattern.matches(contextValue.toString(), context)) {
+                return null;
+            }
+        } catch (Exception exc) {
+            exc.printStackTrace();
+            return null;
+        }
         T obj = bundleContext.getService(ref);
         if (obj == null) {
             return null;
         }
-        String name = adder.apply(obj);
+        R name = adder.apply(obj);
         if (name == null) {
             bundleContext.ungetService(ref);
         }
@@ -51,11 +68,11 @@ class Tracker<T> implements ServiceTrackerCustomizer<T, String> {
     }
 
     @Override
-    public void modifiedService(ServiceReference<T> ref, String name) {
+    public void modifiedService(ServiceReference<T> ref, R name) {
     }
 
     @Override
-    public void removedService(ServiceReference<T> ref, String name) {
+    public void removedService(ServiceReference<T> ref, R name) {
         bundleContext.ungetService(ref);
         remover.accept(name);
     }
