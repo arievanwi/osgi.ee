@@ -43,6 +43,7 @@ import javax.xml.transform.stream.StreamSource;
 import org.jcp.xmlns.xml.ns.javaee.ErrorPageType;
 import org.jcp.xmlns.xml.ns.javaee.FilterMappingType;
 import org.jcp.xmlns.xml.ns.javaee.FilterType;
+import org.jcp.xmlns.xml.ns.javaee.ListenerType;
 import org.jcp.xmlns.xml.ns.javaee.ParamValueType;
 import org.jcp.xmlns.xml.ns.javaee.ServletMappingType;
 import org.jcp.xmlns.xml.ns.javaee.ServletNameType;
@@ -162,10 +163,30 @@ class ServletContextParser {
         });
     }
 
+    /**
+     * Parse the listener classes from the servlet context.
+     *
+     * @param elements The web-app elements
+     * @param handler The context that receives the listeners
+     */
+    private static void parseListeners(Collection<JAXBElement<?>> elements, OurServletContext handler) {
+        doWith(elements, (n) -> "listener".equals(n), (o) -> {
+            ListenerType listener = (ListenerType) o;
+            String clz = listener.getListenerClass().getValue();
+            handler.addListener(clz);
+        });
+    }
+
     private static String parseLocation(String location) {
         return location.startsWith("/") ? location : "/" + location;
     }
 
+    /**
+     * Parse the welcome file definitions and return them.
+     *
+     * @param elements The web app elements
+     * @param welcomeFiles The welcome files, filled
+     */
     private static void parseWelcomeFiles(Collection<JAXBElement<?>> elements,
             final Collection<String> welcomeFiles) {
         doWith(elements, (n) -> "welcome-file-list".equals(n), (o) -> {
@@ -174,6 +195,14 @@ class ServletContextParser {
         });
     }
 
+    /**
+     * Parse the error pages for exceptions and HTTP errors.
+     *
+     * @param elements The elements to parse
+     * @param loader The class loader for class loading
+     * @param errorPages Error pages map, filled
+     * @param exceptionPages Exception pages map, filled
+     */
     private static void parseErrorPages(Collection<JAXBElement<?>> elements,
             ClassLoader loader, Map<Integer, String> errorPages, Map<Class<?>, String> exceptionPages) {
         doWith(elements, (n) -> "error-page".equals(n), (o) -> {
@@ -231,6 +260,7 @@ class ServletContextParser {
         // Process the elements.
         Collection<JAXBElement<?>> elements = type.getModuleNameOrDescriptionAndDisplayName();
         parseParameters(elements, handler);
+        parseListeners(elements, handler);
         parseServlets(elements, handler);
         parseFilters(elements, handler);
         parseWelcomeFiles(elements, welcomes);
