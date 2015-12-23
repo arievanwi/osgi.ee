@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.wiring.BundleWiring;
@@ -86,12 +87,23 @@ public class DelegatingClassLoader extends ClassLoader {
      * @return The class loader
      */
     public static ClassLoader from(Bundle bundle) {
+        return from(getDependencies(bundle).stream().
+                map((b) -> b.adapt(BundleWiring.class).getClassLoader()).
+                distinct().collect(Collectors.toList()));
+    }
+
+    /**
+     * Get the 1st line dependencies (and the bundle itself) for a bundle.
+     *
+     * @param bundle The bundle to get the dependencies for
+     * @return A collection with the bundle and 1st line dependencies
+     */
+    public static Collection<Bundle> getDependencies(Bundle bundle) {
         BundleWiring wiring = bundle.adapt(BundleWiring.class);
-        List<ClassLoader> loaders = new ArrayList<>();
-        loaders.add(wiring.getClassLoader());
+        List<Bundle> out = new ArrayList<>();
+        out.add(bundle);
         wiring.getRequiredWires(null).stream().
-                map((w) -> w.getProvider().getBundle().adapt(BundleWiring.class).getClassLoader()).distinct().
-                forEach((l) -> loaders.add(l));
-        return from(loaders);
+            map((w) -> w.getProvider().getBundle()).forEach((b) -> out.add(b));
+        return out;
     }
 }

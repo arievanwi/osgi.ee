@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -54,11 +55,15 @@ import org.jcp.xmlns.xml.ns.javaee.WebAppType;
 import org.jcp.xmlns.xml.ns.javaee.WelcomeFileListType;
 import org.osgi.framework.Bundle;
 
+import osgi.extender.helpers.DelegatingClassLoader;
 import osgi.extender.web.WebContextDefinition;
 import osgi.extender.web.servlet.DispatchingServlet;
 import osgi.extender.web.servlet.OurServletContext;
 import osgi.extender.web.servlet.support.FRegistration;
 import osgi.extender.web.servlet.support.SRegistration;
+
+import com.sun.java.xml.ns.javaee.ObjectFactory;
+import com.sun.java.xml.ns.javaee.TldTaglibType;
 
 /**
  * Parser for a web.xml like file somewhere in a bundle. Only the minimum number of elements are actually parsed, meaning that
@@ -79,6 +84,7 @@ class ServletContextParser {
             }
             parseFile(webxml, context, welcomePages, httpErrorPages, exceptionPages);
         }
+        loadTLDListeners(bundle).forEach((l) -> context.addListener(l));
         return new DispatchingServlet(context, welcomePages, httpErrorPages, exceptionPages);
     }
 
@@ -266,5 +272,41 @@ class ServletContextParser {
         parseWelcomeFiles(elements, welcomes);
         parseErrorPages(elements, handler.getClassLoader(), errorPages, exceptionPages);
         parseSessionConfig(elements, handler);
+    }
+
+    /**
+     * Parse a TLD, tag library descriptor from one of the META-INF directories of the
+     * dependencies/local bundles.
+     *
+     * @param url The URL to parse
+     * @param toReturn List where the found listener classes are written
+     */
+    private static void parseTLD(URL url, Collection<String> toReturn) {
+        try {
+            JAXBContext context = JAXBContext.newInstance(ObjectFactory.class);
+            Unmarshaller unm = context.createUnmarshaller();
+            JAXBElement<?> element = (JAXBElement<?>) unm.unmarshal(url);
+            TldTaglibType tld = (TldTaglibType) element.getValue();
+            tld.getListener().forEach((l) -> toReturn.add(l.getListenerClass().getValue()));
+        } catch (Exception exc) {
+            exc.printStackTrace();
+        }
+    }
+
+    /**
+     * Load the listener classes from the tag library descriptors.
+     *
+     * @param bundle The bundle to parse (+ its dependencies)
+     * @return A collection with listener class names
+     */
+    private static Collection<String> loadTLDListeners(Bundle bundle) {
+        Collection<Bundle> bundles = DelegatingClassLoader.getDependencies(bundle);
+        Collection<URL> urlsToParse = bundles.stream().
+            map((b) -> b.findEntries("META-INF", "*.tld", true)).
+            filter((e) -> e != null).
+            map((e) -> Collections.list(e)).flatMap((c) -> c.stream()).collect(Collectors.toList());
+        ArrayList<String> toReturn = new ArrayList<>();
+        urlsToParse.forEach((u) -> parseTLD(u, toReturn));
+        return toReturn;
     }
 }
