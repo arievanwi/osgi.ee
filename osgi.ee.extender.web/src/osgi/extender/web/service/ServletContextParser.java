@@ -158,7 +158,7 @@ class ServletContextParser {
             reg.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, urlMappings.toArray(new String[urlMappings.size()]));
             List<String> servletMappings = mapping.getUrlPatternOrServletName().stream().
                     filter((obj) -> ServletNameType.class.isAssignableFrom(obj.getClass())).
-                    map((c) -> ServletNameType.class.cast(o)).map((c) -> c.getValue()).collect(Collectors.toList());
+                    map((c) -> ServletNameType.class.cast(c)).map((c) -> c.getValue()).collect(Collectors.toList());
             reg.addMappingForServletNames(EnumSet.allOf(DispatcherType.class), true, servletMappings.toArray(new String[servletMappings.size()]));
         });
     }
