@@ -17,11 +17,11 @@ package osgi.extender.helpers;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.osgi.framework.Bundle;
@@ -89,7 +89,7 @@ public class DelegatingClassLoader extends ClassLoader {
     public static ClassLoader from(Bundle bundle) {
         return from(getDependencies(bundle).stream().
                 map((b) -> b.adapt(BundleWiring.class).getClassLoader()).
-                distinct().collect(Collectors.toList()));
+                collect(Collectors.toList()));
     }
 
     /**
@@ -100,7 +100,7 @@ public class DelegatingClassLoader extends ClassLoader {
      */
     public static Collection<Bundle> getDependencies(Bundle bundle) {
         BundleWiring wiring = bundle.adapt(BundleWiring.class);
-        List<Bundle> out = new ArrayList<>();
+        Set<Bundle> out = new HashSet<>();
         out.add(bundle);
         wiring.getRequiredWires(null).stream().
             map((w) -> w.getProvider().getBundle()).forEach((b) -> out.add(b));

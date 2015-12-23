@@ -104,9 +104,6 @@ public class OurServletContext implements ServletContext {
         classLoader = DelegatingClassLoader.from(bundle);
         this.context = context;
         this.resourceBase = resourceBase;
-        if (resourceBase != null && resourceBase.endsWith("/")) {
-            this.resourceBase = resourceBase.substring(0, resourceBase.length() - 1);
-        }
         // Required for a WAB according to the specification.
         setAttribute("osgi-bundlecontext", bundle.getBundleContext());
     }
@@ -502,7 +499,9 @@ public class OurServletContext implements ServletContext {
         if (resourceBase == null) {
             return null;
         }
-        return owner.getEntry(resourceBase + "/" + name);
+        String toLookFor = resourceBase + "/" + name;
+        toLookFor  = toLookFor.replaceAll("[\\/]+", "/");
+        return owner.getEntry(toLookFor);
     }
 
     @Override
@@ -665,8 +664,10 @@ public class OurServletContext implements ServletContext {
         if (eventListenerTracker != null) {
             allListeners.addAll(eventListenerTracker.getTracked().values());
         }
-        allListeners.stream().filter((l) -> type.isAssignableFrom(l.getClass())).map((l) -> type.cast(l)).forEach((l) -> {
+        allListeners.stream().filter((l) -> type.isAssignableFrom(l.getClass())).
+            map((l) -> type.cast(l)).forEach((l) -> {
             try {
+                System.out.println("Calling on " + l + " for type: " + type);
                 cons.accept(l);
             } catch (Exception exc) {
                 log("could not perform call on: " + l, exc);

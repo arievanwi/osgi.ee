@@ -198,7 +198,8 @@ public class DispatchingServlet implements Servlet {
      * @param loader The class loader
      */
     private static void callInitializers(ServletContext context, ClassLoader loader) {
-        ServiceLoader<ServletContainerInitializer> services = ServiceLoader.load(ServletContainerInitializer.class, loader);
+        ServiceLoader<ServletContainerInitializer> services =
+                ServiceLoader.load(ServletContainerInitializer.class, loader);
         services.forEach((l) -> {
             try {
                 l.onStartup(null, context);

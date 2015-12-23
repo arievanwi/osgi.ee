@@ -22,3 +22,5 @@ Import-Package: javax.servlet;version="3.0.0",
  org.osgi.util.tracker;version="1.5.1"
 Service-Component: OSGI-INF/osgi.extender.web.service.WebContextListener.xml
 Export-Package: osgi.extender.web;version="1.0.0"
+Require-Bundle: org.primefaces;bundle-version="5.2.0",
+ org.glassfish.javax.faces;bundle-version="2.2.9"
