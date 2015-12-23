@@ -328,7 +328,9 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public void addListener(Class<? extends EventListener> clz) {
-        instance(clz, listenerAdder());
+        if (!listeners.stream().filter((e) -> e.getClass().equals(clz)).findAny().isPresent()) {
+            instance(clz, listenerAdder());
+        }
     }
 
     @Override
