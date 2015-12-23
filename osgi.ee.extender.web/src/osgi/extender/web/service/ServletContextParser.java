@@ -47,6 +47,7 @@ import org.jcp.xmlns.xml.ns.javaee.ParamValueType;
 import org.jcp.xmlns.xml.ns.javaee.ServletMappingType;
 import org.jcp.xmlns.xml.ns.javaee.ServletNameType;
 import org.jcp.xmlns.xml.ns.javaee.ServletType;
+import org.jcp.xmlns.xml.ns.javaee.SessionConfigType;
 import org.jcp.xmlns.xml.ns.javaee.UrlPatternType;
 import org.jcp.xmlns.xml.ns.javaee.WebAppType;
 import org.jcp.xmlns.xml.ns.javaee.WelcomeFileListType;
@@ -193,6 +194,15 @@ class ServletContextParser {
         });
     }
 
+    private static void parseSessionConfig(Collection<JAXBElement<?>> elements, OurServletContext context) {
+        doWith(elements, (n) -> "session-config".equals(n), (o) -> {
+            SessionConfigType config = (SessionConfigType) o;
+            if (config.getSessionTimeout() != null) {
+                context.setMaxInactive(new Integer(config.getSessionTimeout().getValue().toString()));
+            }
+        });
+    }
+
     /**
      * Parse a web-app definition file.
      *
@@ -225,5 +235,6 @@ class ServletContextParser {
         parseFilters(elements, handler);
         parseWelcomeFiles(elements, welcomes);
         parseErrorPages(elements, handler.getClassLoader(), errorPages, exceptionPages);
+        parseSessionConfig(elements, handler);
     }
 }

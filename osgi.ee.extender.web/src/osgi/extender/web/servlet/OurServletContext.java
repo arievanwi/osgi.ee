@@ -649,7 +649,7 @@ public class OurServletContext implements ServletContext {
         return delegate.getDefaultSessionTrackingModes();
     }
 
-    void setMaxInactive(int v) {
+    public void setMaxInactive(int v) {
         maxInactive = v;
     }
 
