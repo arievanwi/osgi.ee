@@ -123,6 +123,10 @@ public class DispatchingServlet implements Servlet {
         HttpServletRequest request = (HttpServletRequest) r;
         HttpServletResponse response = (HttpServletResponse) resp;
         String path = request.getRequestURI();
+        int index = path.indexOf(";");
+        if (index >= 0) {
+            path = path.substring(0, index);
+        }
         // Match it against the context.
         String subpath = path.substring(servletContext.getContextPath().length());
         // Start of path? Redirect to root.

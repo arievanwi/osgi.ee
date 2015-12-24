@@ -19,10 +19,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +38,16 @@ import javax.servlet.ServletRegistration;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.Unmarshaller;
+import javax.xml.namespace.NamespaceContext;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathFactory;
 
 import org.jcp.xmlns.xml.ns.javaee.ErrorPageType;
 import org.jcp.xmlns.xml.ns.javaee.FilterMappingType;
@@ -54,6 +62,8 @@ import org.jcp.xmlns.xml.ns.javaee.UrlPatternType;
 import org.jcp.xmlns.xml.ns.javaee.WebAppType;
 import org.jcp.xmlns.xml.ns.javaee.WelcomeFileListType;
 import org.osgi.framework.Bundle;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 import osgi.extender.helpers.DelegatingClassLoader;
 import osgi.extender.web.WebContextDefinition;
@@ -61,9 +71,6 @@ import osgi.extender.web.servlet.DispatchingServlet;
 import osgi.extender.web.servlet.OurServletContext;
 import osgi.extender.web.servlet.support.FRegistration;
 import osgi.extender.web.servlet.support.SRegistration;
-
-import com.sun.java.xml.ns.javaee.ObjectFactory;
-import com.sun.java.xml.ns.javaee.TldTaglibType;
 
 /**
  * Parser for a web.xml like file somewhere in a bundle. Only the minimum number of elements are actually parsed, meaning that
@@ -283,11 +290,29 @@ class ServletContextParser {
      */
     private static void parseTLD(URL url, Collection<String> toReturn) {
         try {
-            JAXBContext context = JAXBContext.newInstance(ObjectFactory.class);
-            Unmarshaller unm = context.createUnmarshaller();
-            JAXBElement<?> element = (JAXBElement<?>) unm.unmarshal(url);
-            TldTaglibType tld = (TldTaglibType) element.getValue();
-            tld.getListener().forEach((l) -> toReturn.add(l.getListenerClass().getValue()));
+            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            Document document = builder.parse(url.toExternalForm());
+            XPath path = XPathFactory.newInstance().newXPath();
+            path.setNamespaceContext(new NamespaceContext() {
+                @Override
+                public Iterator<?> getPrefixes(String namespaceURI) {
+                    return Arrays.asList("").iterator();
+                }
+                @Override
+                public String getPrefix(String namespaceURI) {
+                    return "";
+                }
+                @Override
+                public String getNamespaceURI(String prefix) {
+                    return "http://java.sun.com/xml/ns/javaee";
+                }
+            });
+            NodeList list = (NodeList) path.evaluate("//listener/listener-class/text()", document,
+                    XPathConstants.NODESET);
+            for (int cnt = 0; cnt < list.getLength(); cnt++) {
+                String className = list.item(cnt).getTextContent();
+                toReturn.add(className);
+            }
         } catch (Exception exc) {
             exc.printStackTrace();
         }
@@ -300,7 +325,7 @@ class ServletContextParser {
      * @return A collection with listener class names
      */
     private static Collection<String> loadTLDListeners(Bundle bundle) {
-        Collection<Bundle> bundles = DelegatingClassLoader.getDependencies(bundle);
+        Collection<Bundle> bundles = DelegatingClassLoader.allOf(bundle);
         Collection<URL> urlsToParse = bundles.stream().
             map((b) -> b.findEntries("META-INF", "*.tld", true)).
             filter((e) -> e != null).

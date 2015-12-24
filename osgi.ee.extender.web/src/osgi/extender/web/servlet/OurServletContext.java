@@ -460,7 +460,7 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public Set<SessionTrackingMode> getEffectiveSessionTrackingModes() {
-        return null;
+        return delegate.getEffectiveSessionTrackingModes();
     }
 
     @Override
@@ -494,14 +494,57 @@ public class OurServletContext implements ServletContext {
         return delegate.getRequestDispatcher(path);
     }
 
-    @Override
-    public URL getResource(String name) throws MalformedURLException {
-        if (resourceBase == null) {
+    /**
+     * Perform a lookup of paths in the current context. The handling handles a META-INF directory below
+     * the WEB-INF/classes path as special, assuming that it may contain definition files like
+     * facelets tag library definitions, etc. It is therefore regarded as a symbolic link to all
+     * files in META-INF directories in dependency bundles.
+     *
+     * @param relative The relative path to look for, as requested to this context
+     * @param toApply A function to apply for finding URLs
+     * @return A map with as key the logical path, and as value the URL mapping to it
+     */
+    private Map<String, URL> lookFor(String relative, BiFunction<Bundle, String, Collection<URL>> toApply) {
+        Collection<Bundle> process = null;
+        String toLookFor = null;
+        Function<String, String> postProcess = (s) -> s;
+        final String METAINF = "WEB-INF/classes/META-INF";
+        int index = relative.indexOf(METAINF);
+        if (index >= 0) {
+            // It is a meta lookup.
+            process = DelegatingClassLoader.getDependencies(getOwner());
+            toLookFor = "META-INF" + relative.substring(index + METAINF.length());
+            postProcess = (s) -> s.replace("META-INF", METAINF);
+        }
+        else if (resourceBase != null) {
+            // It is a resource lookup.
+            toLookFor = resourceBase + "/" + relative;
+            toLookFor  = toLookFor.replaceAll("[\\/]+", "/");
+            process = Arrays.asList(getOwner());
+            postProcess = (s) -> "/" + s.substring(resourceBase.length());
+        }
+        if (process == null) {
             return null;
         }
-        String toLookFor = resourceBase + "/" + name;
-        toLookFor  = toLookFor.replaceAll("[\\/]+", "/");
-        return owner.getEntry(toLookFor);
+        String lookFor = toLookFor;
+        Function<String, String> postOp = postProcess;
+        Map<String, URL> out = new HashMap<>();
+        process.stream().map((b) -> toApply.apply(b, lookFor)).
+            flatMap((c) -> c.stream()).
+            filter((u) -> u != null).forEach((url) -> {
+                String name = postOp.apply(url.getPath());
+                out.put(name, url);
+            });
+        return out;
+    }
+
+    @Override
+    public URL getResource(String name) throws MalformedURLException {
+        Map<String, URL> resources = lookFor(name, (b, n) -> Arrays.asList(b.getEntry(n)));
+        if (resources != null && resources.size() > 0) {
+            return resources.values().iterator().next();
+        }
+        return null;
     }
 
     @Override
@@ -516,20 +559,19 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public Set<String> getResourcePaths(String rel) {
-        String start = resourceBase;
-        if (!rel.startsWith("/")) {
-            start += "/";
-        }
-        start += rel;
-        Enumeration<URL> found = owner.findEntries(start, null, false);
-        if (found == null) {
+        // Look for resources, nested.
+        Map<String, URL> resources = lookFor(rel, (b, n) -> {
+            Enumeration<URL> urls = b.findEntries(n, "*", false);
+            List<URL> urlCollection = new ArrayList<>();
+            if (urls != null) {
+                urlCollection.addAll(Collections.list(urls));
+            }
+            return urlCollection;
+        });
+        if (resources == null) {
             return null;
         }
-        return Collections.list(found).stream().
-                map((u) -> u.getPath()).
-                map((s) -> s.substring(resourceBase.length())).
-                filter((s) -> !s.contains("WEB-INF") && !s.contains("META-INF")).
-                collect(Collectors.toSet());
+        return resources.keySet();
     }
 
     @Override
@@ -667,7 +709,6 @@ public class OurServletContext implements ServletContext {
         allListeners.stream().filter((l) -> type.isAssignableFrom(l.getClass())).
             map((l) -> type.cast(l)).forEach((l) -> {
             try {
-                System.out.println("Calling on " + l + " for type: " + type);
                 cons.accept(l);
             } catch (Exception exc) {
                 log("could not perform call on: " + l, exc);

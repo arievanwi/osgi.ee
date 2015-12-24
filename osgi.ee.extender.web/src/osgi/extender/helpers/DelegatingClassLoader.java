@@ -87,23 +87,33 @@ public class DelegatingClassLoader extends ClassLoader {
      * @return The class loader
      */
     public static ClassLoader from(Bundle bundle) {
-        return from(getDependencies(bundle).stream().
+        return from(allOf(bundle).stream().
                 map((b) -> b.adapt(BundleWiring.class).getClassLoader()).
                 collect(Collectors.toList()));
     }
 
     /**
-     * Get the 1st line dependencies (and the bundle itself) for a bundle.
+     * Get the 1st line dependencies for a bundle.
      *
      * @param bundle The bundle to get the dependencies for
-     * @return A collection with the bundle and 1st line dependencies
+     * @return A collection of 1st line dependencies of the bundle
      */
     public static Collection<Bundle> getDependencies(Bundle bundle) {
         BundleWiring wiring = bundle.adapt(BundleWiring.class);
+        return wiring.getRequiredWires(null).stream().
+            map((w) -> w.getProvider().getBundle()).distinct().collect(Collectors.toSet());
+    }
+
+    /**
+     * Get the collection of a bundle and its first line dependencies.
+     *
+     * @param bundle The bundle to get the dependencies for
+     * @return A set with the bundle and its dependencies
+     */
+    public static Collection<Bundle> allOf(Bundle bundle) {
         Set<Bundle> out = new HashSet<>();
         out.add(bundle);
-        wiring.getRequiredWires(null).stream().
-            map((w) -> w.getProvider().getBundle()).forEach((b) -> out.add(b));
+        out.addAll(getDependencies(bundle));
         return out;
     }
 }
