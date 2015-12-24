@@ -95,7 +95,7 @@ public class WebContextListener {
             DispatchingServlet servlet = ServletContextParser.create(bundle, def);
             httpService.registerServlet(path(servlet.getServletContext()), servlet, null, null);
             return new Context(servlet);
-        } catch (Exception exc) {
+        } catch (Throwable exc) {
             exc.printStackTrace();
             return null;
         }
