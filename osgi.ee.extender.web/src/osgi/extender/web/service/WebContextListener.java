@@ -80,7 +80,7 @@ public class WebContextListener {
     }
 
     private static String path(ServletContext c) {
-        return c.getContextPath() + "/*";
+        return c.getContextPath();
     }
 
     /**

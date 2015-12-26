@@ -16,6 +16,7 @@
 package osgi.extender.web.service;
 
 import java.net.URL;
+import java.util.Dictionary;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleEvent;
@@ -35,13 +36,14 @@ public class WebBundleChangeListener implements BundleTrackerCustomizer<ServiceR
     @Override
     public ServiceRegistration<?> addingBundle(Bundle bundle, BundleEvent event) {
         // Does the bundle contain a header according to the specification?
-        String contextPath = bundle.getHeaders().get("Web-ContextPath");
-        if (contextPath == null) {
+        Dictionary<String, String> headers = bundle.getHeaders();
+        String path;
+        if ((path = headers.get("Web-ContextPath")) == null && (path = headers.get("X-Web-ContextPath")) == null) {
             return null;
         }
         // Load the web.xml. In practice this is needed, although the specification allows running without.
         URL webxml = bundle.getEntry(WEBXML);
-        SimpleWebContextDefinition def = new SimpleWebContextDefinition(contextPath, webxml == null ? null : WEBXML, "/");
+        SimpleWebContextDefinition def = new SimpleWebContextDefinition(path, webxml == null ? null : WEBXML, "/");
         // Register the service to have our listener pick it up.
         ServiceRegistration<?> reg = bundle.getBundleContext().registerService(WebContextDefinition.class, def, null);
         return reg;
