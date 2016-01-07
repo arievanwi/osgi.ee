@@ -95,7 +95,7 @@ public class EntityManagerFactoryTracker {
      * manager.
      *
      * @param factory The factory used
-     * @param
+     * @param properties The service properties of the factory
      */
     private synchronized void register(EntityManagerFactory factory, Map<String, Object> properties) {
         if (context == null || transactionManager == null || entityManagers.containsKey(factory)) {
@@ -136,6 +136,7 @@ public class EntityManagerFactoryTracker {
             try {
                 manager.unregister();
             } catch (Exception exc) {
+                // Who cares?
             }
         }
     }
