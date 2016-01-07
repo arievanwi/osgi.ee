@@ -125,7 +125,7 @@ public class OurServletContext implements ServletContext {
                 map((c) -> "(" + Constants.OBJECTCLASS + "=" + c.getName() + ")").collect(Collectors.toList());
         String filterString = "|" + String.join("", objectFilters);
         eventListenerTracker = startTracking(filterString,
-                new Tracker<EventListener, EventListener>(bc, getContextPath(), (e) -> e, (e) -> {}));
+                new Tracker<EventListener, EventListener>(bc, getContextPath(), (e) -> e, (e) -> { /* No destruct */}));
         // Initialize the servlets.
         ServletContextEvent event = new ServletContextEvent(this);
         call(ServletContextListener.class, (l) -> l.contextInitialized(event));
@@ -416,6 +416,7 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public void declareRoles(String... roles) {
+        // Security is not handled.
     }
 
     @Override
@@ -685,6 +686,7 @@ public class OurServletContext implements ServletContext {
 
     @Override
     public void setSessionTrackingModes(Set<SessionTrackingMode> modes) {
+        // Do not propagate.
     }
 
     @Override

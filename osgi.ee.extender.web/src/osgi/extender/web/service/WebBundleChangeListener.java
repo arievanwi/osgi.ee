@@ -51,12 +51,15 @@ public class WebBundleChangeListener implements BundleTrackerCustomizer<ServiceR
 
     @Override
     public void modifiedBundle(Bundle bundle, BundleEvent event, ServiceRegistration<?> object) {
+        // Not handled.
     }
 
     @Override
     public void removedBundle(Bundle bundle, BundleEvent event, ServiceRegistration<?> object) {
         try {
             object.unregister();
-        } catch (Exception exc) {}
+        } catch (Exception exc) {
+            // Silently ignore.
+        }
     }
 }

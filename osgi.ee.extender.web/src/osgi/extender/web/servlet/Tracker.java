@@ -69,6 +69,7 @@ class Tracker<T, R> implements ServiceTrackerCustomizer<T, R> {
 
     @Override
     public void modifiedService(ServiceReference<T> ref, R name) {
+        // We don't handle property changes.
     }
 
     @Override

@@ -36,10 +36,12 @@ public class DynamicSRegistration extends SRegistration implements ServletRegist
 
     @Override
     public void setLoadOnStartup(int los) {
+        // We load all servlets at startup.
     }
 
     @Override
     public void setMultipartConfig(MultipartConfigElement elem) {
+        // Multi-part handling is not handled at all.
     }
 
     @Override

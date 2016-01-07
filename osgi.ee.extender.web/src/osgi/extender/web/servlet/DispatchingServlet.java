@@ -94,7 +94,9 @@ public class DispatchingServlet implements Servlet {
     public void destroy() {
         try {
             registration.unregister();
-        } catch (Exception exc) {}
+        } catch (Exception exc) {
+            // May fail, but silently ignore.
+        }
         // Send the context destroyed event to all applicable listeners.
         try {
             doWithClassLoader(() -> servletContext.destroy());

@@ -60,6 +60,7 @@ public class WebContextListener {
             }
             @Override
             public void modifiedService(ServiceReference<WebContextDefinition> ref, Context ctxt) {
+                // Not necessary
             }
             @Override
             public void removedService(ServiceReference<WebContextDefinition> ref, Context ctxt) {

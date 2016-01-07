@@ -60,5 +60,6 @@ abstract class BaseSynchronization implements Synchronization {
      */
     @Override
     public final void beforeCompletion() {
+        // No actions.
     }
 }
