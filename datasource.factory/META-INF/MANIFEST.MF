@@ -10,8 +10,7 @@ Import-Package: javax.management,
  javax.transaction;version="1.1.0",
  javax.transaction.xa;version="1.1.0",
  org.osgi.framework;version="1.8.0",
- org.osgi.service.cm;version="1.5.0",
- org.osgi.service.component.annotations;version="1.2.0";resolution:=optional
+ org.osgi.service.cm;version="1.5.0"
 Service-Component: OSGI-INF/datasource.DataSourceProvider.xml,
  OSGI-INF/datasource.TransactionalDataSourceProvider.xml
 Bundle-ClassPath: lib/commons-dbcp-1.4.jar,
