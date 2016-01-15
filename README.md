@@ -1,6 +1,6 @@
 #### OSGi JEE7 extender 
 Getting JEE7 to work in OSGi can be a real pain: there are a lot of (open source) projects going on to implement more or less the 
-[OSGi R5 enterprise standard][1], but to integrate them is problematic. Not the least because of the dependencies that
+[OSGi R5/R6 enterprise standard][1], but to integrate them is problematic. Not the least because of the dependencies that
 are required for some projects and mismatches in implementation versions.
 
 The repository here is meant as a one-stop solution for the following JEE7 standards on OSGi:
