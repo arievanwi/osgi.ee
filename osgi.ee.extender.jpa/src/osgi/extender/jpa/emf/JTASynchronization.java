@@ -23,8 +23,8 @@ import javax.persistence.EntityManager;
  */
 class JTASynchronization extends BaseSynchronization {
 
-    public JTASynchronization(ThreadLocal<EntityManager> l) {
-        super(l);
+    public JTASynchronization(EntityManager em, ThreadLocal<EntityManager> l) {
+        super(em, l);
     }
 
     @Override

@@ -25,10 +25,10 @@ import javax.transaction.Status;
  */
 class ResourceLocalSynchronization extends BaseSynchronization {
     private EntityTransaction trans;
-    
-    ResourceLocalSynchronization(EntityTransaction t, ThreadLocal<EntityManager> l) {
-        super(l);
-        this.trans = t;
+
+    ResourceLocalSynchronization(EntityTransaction t, EntityManager em, ThreadLocal<EntityManager> l) {
+        super(em, l);
+        trans = t;
     }
 
     @Override

@@ -107,7 +107,7 @@ class EntityProxyInvocationHandler implements InvocationHandler {
             return toReturn;
         }
         EntityManager manager = local.get();
-        if (manager == null) {
+        if (manager == null || !manager.isOpen()) {
             if (transactionManager.getStatus() == Status.STATUS_NO_TRANSACTION) {
                 throw new Exception("cannot create an entity manager while no transaction active");
             }
@@ -131,7 +131,7 @@ class EntityProxyInvocationHandler implements InvocationHandler {
      */
     private static void registerEntityManagerJTA(EntityManager manager, final ThreadLocal<EntityManager> local,
             final TransactionManager transactionManager) throws Exception {
-        Synchronization sync = new JTASynchronization(local);
+        Synchronization sync = new JTASynchronization(manager, local);
         transactionManager.getTransaction().registerSynchronization(sync);
         manager.joinTransaction();
     }
@@ -147,7 +147,7 @@ class EntityProxyInvocationHandler implements InvocationHandler {
             final TransactionManager transactionManager) throws Exception {
         EntityTransaction trans = manager.getTransaction();
         trans.begin();
-        transactionManager.getTransaction().registerSynchronization(new ResourceLocalSynchronization(trans, local));
+        transactionManager.getTransaction().registerSynchronization(new ResourceLocalSynchronization(trans, manager, local));
     }
 
     /**
@@ -161,7 +161,7 @@ class EntityProxyInvocationHandler implements InvocationHandler {
             final TransactionManager transactionManager) throws Exception {
         try {
             manager.joinTransaction();
-            Synchronization sync = new JTASynchronization(local);
+            Synchronization sync = new JTASynchronization(manager, local);
             transactionManager.getTransaction().registerSynchronization(sync);
         } catch (TransactionRequiredException exc) {
             registerEntityManagerResourceLocal(manager, local, transactionManager);
