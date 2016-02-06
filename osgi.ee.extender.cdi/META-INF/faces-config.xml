@@ -9,5 +9,6 @@
    </factory>
    <application>
      <view-handler>osgi.cdi.faces.ViewScopeViewHandler</view-handler>
+     <resource-handler>osgi.cdi.faces.BundleResourceHandler</resource-handler>
    </application>
 </faces-config>
