@@ -20,10 +20,13 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Enumeration;
 
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleReference;
+
 /**
  * Class loader that delegates to other class loaders in order of appearance.
  */
-class CompoundClassLoader extends ClassLoader {
+class CompoundClassLoader extends ClassLoader implements BundleReference {
     private ClassLoader delegate;
     
     private CompoundClassLoader(ClassLoader parent, ClassLoader delegate) {
@@ -46,6 +49,11 @@ class CompoundClassLoader extends ClassLoader {
         return delegate.getResources(name);
     }
     
+    @Override
+    public Bundle getBundle() {
+        return ((BundleReference) getParent()).getBundle();
+    }
+
     /**
      * Get a compound class loader from a set of other loaders. The number of loaders
      * is unimportant.
