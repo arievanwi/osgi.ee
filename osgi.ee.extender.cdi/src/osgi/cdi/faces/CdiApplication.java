@@ -31,19 +31,16 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.faces.FacesException;
 import javax.faces.application.Application;
 import javax.faces.application.ApplicationWrapper;
-import javax.faces.application.ResourceHandler;
 import javax.faces.component.UIComponent;
 import javax.faces.context.FacesContext;
 import javax.faces.validator.Validator;
 import javax.faces.validator.ValidatorException;
-import javax.servlet.ServletContext;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
-
 
 /**
  * Application wrapper. Wraps another application and performs some special actions on the faces
@@ -67,27 +64,6 @@ class CdiApplication extends ApplicationWrapper {
     }
 
     /**
-     * Get the bundle context. It is retrieved from the servlet attribute as per OSGi web specifiction.
-     *
-     * @return The bundle context
-     */
-    private static BundleContext context() {
-        FacesContext context = FacesContext.getCurrentInstance();
-        ServletContext servletContext = (ServletContext) context.getExternalContext().getContext();
-        final BundleContext bundleContext = (BundleContext) servletContext.getAttribute("osgi-bundlecontext");
-        return bundleContext;
-    }
-
-    /**
-     * Get the filter specification as present in the init parameter.
-     *
-     * @return The filter specification. May be null
-     */
-    private static String getFilter() {
-        return FacesContext.getCurrentInstance().getExternalContext().getInitParameter("osgi.extender.cdi.faces.filter");
-    }
-
-    /**
      * Check, and if needed, construct a service tracker for a specific object given a specific filter.
      *
      * @param current The current service tracker provider. May result to a null value
@@ -98,9 +74,9 @@ class CdiApplication extends ApplicationWrapper {
             Consumer<ServiceTracker<T, T>> setter) {
         ServiceTracker<T, T> thisTracker = current.get();
         if (thisTracker == null) {
-            final BundleContext bundleContext = context();
+            final BundleContext bundleContext = FacesHelper.context();
             if (bundleContext != null) {
-                String filterSpec = getFilter();
+                String filterSpec = FacesHelper.getFilter();
                 String filter = "(" + Constants.OBJECTCLASS + "=" + clz.getName() + ")";
                 if (filterSpec != null) {
                     filter = "(&" + filter + filterSpec + ")";
@@ -164,18 +140,7 @@ class CdiApplication extends ApplicationWrapper {
     }
 
     @Override
-    public ResourceHandler getResourceHandler() {
-        try {
-            return new BundleResourceHandler(context(), delegate.getResourceHandler(), getFilter());
-        } catch (Exception exc) {
-            exc.printStackTrace();
-            return delegate.getResourceHandler();
-        }
-    }
-
-
-    @Override
-    public Validator createValidator(String name) throws FacesException {
+    public Validator<?> createValidator(String name) throws FacesException {
         synchronized (this) {
             check(() -> validators, Validator.class, (v) -> validators = v);
             if (validators != null) {

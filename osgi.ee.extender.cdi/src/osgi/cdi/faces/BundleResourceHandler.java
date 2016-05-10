@@ -35,6 +35,7 @@ import javax.servlet.ServletRegistration;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.util.tracker.ServiceTracker;
 
 import osgi.extender.resource.BundleResource;
@@ -49,24 +50,25 @@ import osgi.extender.resource.BundleResourceProvider;
  *
  * @author Arie van Wijngaarden
  */
-class BundleResourceHandler extends ResourceHandlerWrapper {
+public class BundleResourceHandler extends ResourceHandlerWrapper {
     private ResourceHandler delegate;
     private ServiceTracker<BundleResourceProvider, BundleResourceProvider> tracker;
 
     /**
-     * Construct a resource handler. Delegates to the current faces context or
-     * uses services based on the bundle context provided.
+     * Construct a bundle resource handler that wraps another and performs lookups of resources
+     * in the services that export bundle resources.
      *
-     * @param context The context, used for finding services
      * @param wrapped The wrapped resource handler
-     * @param filt The filter specification, may be null
+     * @throws InvalidSyntaxException In case the filter in the context is invalid
      */
-    BundleResourceHandler(BundleContext context, ResourceHandler wrapped, String filt) throws Exception {
+    public BundleResourceHandler(ResourceHandler wrapped) throws InvalidSyntaxException {
         delegate = wrapped;
         String filter = "(" + Constants.OBJECTCLASS + "=" + BundleResourceProvider.class.getName() + ")";
+        String filt = FacesHelper.getFilter();
         if (filt != null) {
             filter = "(&" + filter + filt + ")";
         }
+        BundleContext context = FacesHelper.context();
         tracker = new ServiceTracker<>(context, context.createFilter(filter), null);
         tracker.open();
     }
