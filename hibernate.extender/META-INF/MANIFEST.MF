@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Hibernate service extender
+Bundle-SymbolicName: hibernate.extender
+Bundle-Version: 1.0.0
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Import-Package: javassist.util.proxy;version="3.20.0.GA",
+ javax.persistence;version="2.1.0",
+ javax.persistence.spi;version="2.1.0",
+ org.hibernate.proxy;version="5.1.0.Final",
+ org.osgi.service.jpa;version="1.1.0"
+Service-Component: OSGI-INF/hibernate.extender.PersistenceProviderImpl.xml
+Bundle-ClassPath: lib/dom4j-1.6.1.jar,
+ .
+Export-Package: org.dom4j,
+ org.dom4j.io

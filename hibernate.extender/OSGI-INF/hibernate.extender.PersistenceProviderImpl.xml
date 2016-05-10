@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scr:component xmlns:scr="http://www.osgi.org/xmlns/scr/v1.1.0" name="hibernate.extender.PersistenceProviderImpl">
+   <property name="osgi.unit.provider" value="org.hibernate.jpa.HibernatePersistenceProvider"/>
+   <service>
+      <provide interface="javax.persistence.spi.PersistenceProvider"/>
+   </service>
+   <reference bind="setProvider" cardinality="1..1" interface="javax.persistence.spi.PersistenceProvider" name="Provider" policy="static" target="(javax.persistence.provider=org.hibernate.jpa.HibernatePersistenceProvider)"/>
+   <implementation class="hibernate.extender.PersistenceProviderImpl"/>
+</scr:component>
