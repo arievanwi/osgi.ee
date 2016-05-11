@@ -4,6 +4,7 @@ it has some flaws:
 - It does not  set the correct properties on the service.
 - It forces the persistence bundle to import packages (org.hibernate.proxy, javassist.util.proxy) since these packages must be visible from
 the bundle class loader.
+
 These issues are automatically resolved by this extender. Furthermore, the extender exports the dom4j packages needed
 by Hibernate since the dom4j bundles from various sources need stax at a specific version (which is not needed on Java 8). 
 
