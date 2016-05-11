@@ -62,17 +62,21 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
         Map.Entry<String, PersistenceProvider> pp = provider.get(context.definition.provider);
         // Do the registration of the service asynchronously. Since it may imply all kinds of
         // listening actions performed as a result of it, it may block the bundle handling.
+        // However, indicate that we are in the process of the actions by
+        // setting the used provider.
+        context.usedProvider = pp.getKey();
         new Thread(() -> {
             synchronized (context) {
-                PersistenceUnitInfo info = PersistenceUnitProcessor.getPersistenceUnitInfo(bundle,
-                        context.definition, pp.getValue());
-                context.factory = PersistenceUnitProcessor.createFactory(pp.getValue(), info);
-                context.usedProvider = pp.getKey();
-                Hashtable<String, Object> props = new Hashtable<>();
-                props.put(EntityManagerFactoryBuilder.JPA_UNIT_NAME, context.definition.name);
-                props.put(PersistenceUnitTransactionType.class.getName(), info.getTransactionType().name());
-                context.registration = bundle.getBundleContext().registerService(
-                        EntityManagerFactory.class, context.factory, props);
+                if (context.usedProvider != null) {
+                    PersistenceUnitInfo info = PersistenceUnitProcessor.getPersistenceUnitInfo(bundle,
+                            context.definition, pp.getValue());
+                    context.factory = PersistenceUnitProcessor.createFactory(pp.getValue(), info);
+                    Hashtable<String, Object> props = new Hashtable<>();
+                    props.put(EntityManagerFactoryBuilder.JPA_UNIT_NAME, context.definition.name);
+                    props.put(PersistenceUnitTransactionType.class.getName(), info.getTransactionType().name());
+                    context.registration = bundle.getBundleContext().registerService(
+                            EntityManagerFactory.class, context.factory, props);
+                }
             }
         }).start();
     }
@@ -95,9 +99,10 @@ public class JpaBundleChangeListener implements BundleTrackerCustomizer<Object>,
         List<Context> contexts = bundles.get(bundle);
         if (contexts != null) {
             contexts.stream().
-            filter((c) -> c.factory == null).
-            filter((c) -> provider.get(c.definition.provider) != null).
-            forEach((context) -> create(bundle, context));
+                filter((c) -> c.factory == null).
+                filter((c) -> c.usedProvider == null).
+                filter((c) -> provider.get(c.definition.provider) != null).
+                forEach((context) -> create(bundle, context));
         }
     }
 
