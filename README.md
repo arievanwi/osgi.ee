@@ -5,7 +5,7 @@ are required for some projects and mismatches in implementation versions.
 
 The repository here is meant as a one-stop solution for the following JEE7 standards on OSGi:
 * CDI 1.2. Implemented using the [Weld][2] CDI reference implementation, that can be downloaded [here][3].
-* JPA 2.1. Implemented using the standard JPA 2.1 interfaces only and tested with Eclipselink.
+* JPA 2.1. Implemented using the standard JPA 2.1 interfaces only and tested with Eclipselink (although it works with Hibernate as well).
 * JTA 1.1. A transaction manager that can be used in local solutions in case of the absence of a genuine transaction manager.
 * JSF 2.2. The standard JSF solutions are OSGi aware, but this extender helps in integrating CDI with JSF. For this a 
 standard OSGi web extender is needed with some additional functionality for finding Faces configuration files and tag libraries. This is functionality provided by the web extender present in this project although also alternatives can be used, like [PAX-WEB][4].
