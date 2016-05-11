@@ -3,6 +3,7 @@
    <property name="osgi.unit.provider" value="org.hibernate.jpa.HibernatePersistenceProvider"/>
    <service>
       <provide interface="javax.persistence.spi.PersistenceProvider"/>
+      <provide interface="hibernate.extender.PersistenceProviderImpl"/>
    </service>
    <reference bind="setProvider" cardinality="1..1" interface="javax.persistence.spi.PersistenceProvider" name="Provider" policy="static" target="(javax.persistence.provider=org.hibernate.jpa.HibernatePersistenceProvider)"/>
    <implementation class="hibernate.extender.PersistenceProviderImpl"/>
