@@ -40,9 +40,8 @@ import org.osgi.service.jpa.EntityManagerFactoryBuilder;
  * 
  * @author Arie van Wijngaarden
  */
-@Component(property = {
-        EntityManagerFactoryBuilder.JPA_UNIT_PROVIDER + "=" + PersistenceProviderImpl.PROVIDERID}, service = {
-                PersistenceProvider.class, PersistenceProviderImpl.class})
+@Component(property = {EntityManagerFactoryBuilder.JPA_UNIT_PROVIDER + "=" + PersistenceProviderImpl.PROVIDERID}, 
+    service = {PersistenceProvider.class, PersistenceProviderImpl.class})
 public class PersistenceProviderImpl implements PersistenceProvider {
     static final String PROVIDERID = "org.hibernate.jpa.HibernatePersistenceProvider";
     private PersistenceProvider provider;

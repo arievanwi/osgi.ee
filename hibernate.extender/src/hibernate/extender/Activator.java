@@ -20,6 +20,13 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.hooks.weaving.WeavingHook;
 
+/**
+ * Bundle activator for this extender bundle. Registers the weaving hook service
+ * to make sure that classes loaded from persistence bundles get a dynamic
+ * import of the hibernate proxy packages. This registration must be done before
+ * any persistence classes may be loaded and therefore is done via an activator.
+ * The actual persistence provider is started via a service component.
+ */
 public class Activator implements BundleActivator {
     @Override
     public void start(BundleContext context) {
