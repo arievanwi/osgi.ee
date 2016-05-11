@@ -1,5 +1,4 @@
 /*
- * Copyright 2016, Fujifilm Manufacturing Europe B.V.
  * Copyright 2016, aVineas IT Consulting
  *
  * Licensed under the Apache License, Version 2.0 (the "License");

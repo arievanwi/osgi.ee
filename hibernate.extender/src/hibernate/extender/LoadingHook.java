@@ -1,5 +1,4 @@
 /*
- * Copyright 2016, Fujifilm Manufacturing Europe B.V.
  * Copyright 2016, aVineas IT Consulting
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +29,7 @@ import org.osgi.util.tracker.ServiceTracker;
  * loaded from the bundles that are extended via the hibernate persistence
  * provider.
  */
-public class LoadingHook implements WeavingHook {
+class LoadingHook implements WeavingHook {
     private static final List<String> imports = Arrays.asList("org.hibernate.proxy", "javassist.util.proxy");
     private ServiceTracker<PersistenceProviderImpl, PersistenceProviderImpl> tracker;
 
