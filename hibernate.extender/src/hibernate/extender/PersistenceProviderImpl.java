@@ -48,7 +48,7 @@ public class PersistenceProviderImpl implements PersistenceProvider {
     private Set<Bundle> bundles = new HashSet<>();
 
     @Override
-    public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map props) {
+    public synchronized EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map props) {
         Bundle bundle = ((BundleReference) info.getClassLoader()).getBundle();
         synchronized (bundles) {
             bundles.add(bundle);

@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Hibernate service extender
 Bundle-SymbolicName: hibernate.extender
-Bundle-Version: 1.0.1
+Bundle-Version: 1.0.2
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: javassist.util.proxy;version="3.20.0",
  javax.persistence;version="2.1.0",
