@@ -85,7 +85,7 @@ public class TransactionFilter implements Filter {
                     if (manager.getStatus() == Status.STATUS_MARKED_ROLLBACK) {
                         manager.rollback();
                     }
-                    else {
+                    else if (manager.getStatus() == Status.STATUS_ACTIVE) {
                         manager.commit();
                     }
                 }
