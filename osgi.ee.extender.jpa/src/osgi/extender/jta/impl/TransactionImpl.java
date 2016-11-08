@@ -139,9 +139,6 @@ public class TransactionImpl implements Transaction {
         if (status == Status.STATUS_NO_TRANSACTION) {
             throw new IllegalStateException("no transaction active");
         }
-        if (status != Status.STATUS_ACTIVE && status != Status.STATUS_MARKED_ROLLBACK) {
-            throw new IllegalStateException("transaction status " + status + " does not allow rolling back");
-        }
         setStatus(Status.STATUS_ROLLING_BACK);
         resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0), false));
         resources.stream().forEach((r) -> doWith(r, (rr) -> rr.rollback(xid), false));
