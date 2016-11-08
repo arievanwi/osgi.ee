@@ -45,7 +45,12 @@ public class TransactionImpl implements Transaction {
     private List<XAResource> resources = new ArrayList<>();
     private Xid xid = new XXid();
     private long startTime = System.currentTimeMillis();
+    private Consumer<TransactionImpl> endNotifier;
 
+    TransactionImpl(Consumer<TransactionImpl> end) {
+    	this.endNotifier = end;
+    }
+    
     void setStatus(int status) {
         this.status = status;
     }
@@ -134,8 +139,7 @@ public class TransactionImpl implements Transaction {
         }
     }
     
-    @Override
-    public void rollback() {
+    private void _rollback() {
         if (status == Status.STATUS_NO_TRANSACTION) {
             throw new IllegalStateException("no transaction active");
         }
@@ -143,38 +147,53 @@ public class TransactionImpl implements Transaction {
         resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0), false));
         resources.stream().forEach((r) -> doWith(r, (rr) -> rr.rollback(xid), false));
         doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_ROLLEDBACK), false));
+        setStatus(Status.STATUS_ROLLEDBACK);
+    }
+    
+    @Override
+    public void rollback() {
+    	try {
+    		_rollback();
+    	} finally {
+    		endNotifier.accept(this);
+    	}
     }
 
     @Override
     public void commit() {
-        if (status == Status.STATUS_NO_TRANSACTION) {
-            throw new IllegalStateException("no transaction active");
-        }
-        if (status == Status.STATUS_MARKED_ROLLBACK) {
-            rollback();
-        }
-        else if (status == Status.STATUS_ACTIVE) {
-            try {
-                doWithSyncs((s) -> doWith(s, (ss) -> ss.beforeCompletion(), true));
-                if (getStatus() == Status.STATUS_MARKED_ROLLBACK) {
-                    rollback();
-                }
-                else {
-                    resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0), true));
-                    setStatus(Status.STATUS_PREPARING);
-                    resources.stream().forEach((r) -> doWith(r, (rr) -> rr.prepare(xid), true));
-                    setStatus(Status.STATUS_COMMITTING);
-                    resources.stream().forEach((r) -> doWith(r, (rr) -> rr.commit(xid, true), true));
-                    doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED), true));
-                }
-            } catch (Exception exc) {
-                rollback();
-                throw new RollbackException("could not commit transaction. Rolled it back", exc);
-            }
-        }
-        else {
-            throw new IllegalStateException("transaction status " + status + " does not allow commit");
-        }
+    	try {
+	        if (status == Status.STATUS_NO_TRANSACTION) {
+	            throw new IllegalStateException("no transaction active");
+	        }
+	        if (status == Status.STATUS_MARKED_ROLLBACK) {
+	            _rollback();
+	        }
+	        else if (status == Status.STATUS_ACTIVE) {
+	            try {
+	                doWithSyncs((s) -> doWith(s, (ss) -> ss.beforeCompletion(), true));
+	                if (getStatus() == Status.STATUS_MARKED_ROLLBACK) {
+	                    _rollback();
+	                }
+	                else {
+	                    resources.stream().forEach((r) -> doWith(r, (rr) -> delistResource(rr, 0), true));
+	                    setStatus(Status.STATUS_PREPARING);
+	                    resources.stream().forEach((r) -> doWith(r, (rr) -> rr.prepare(xid), true));
+	                    setStatus(Status.STATUS_COMMITTING);
+	                    resources.stream().forEach((r) -> doWith(r, (rr) -> rr.commit(xid, true), true));
+	                    doWithSyncs((s) -> doWith(s, (ss) -> ss.afterCompletion(Status.STATUS_COMMITTED), true));
+	                    setStatus(Status.STATUS_COMMITTED);
+	                }
+	            } catch (Exception exc) {
+	                _rollback();
+	                throw new RollbackException("could not commit transaction. Rolled it back", exc);
+	            }
+	        }
+	        else {
+	            throw new IllegalStateException("transaction status " + status + " does not allow commit");
+	        }
+    	} finally {
+        	endNotifier.accept(this);
+    	}
     }
 
     @Override

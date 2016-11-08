@@ -62,11 +62,7 @@ class TransactionManagerImpl implements TransactionManager {
     
     @Override
     public void commit() {
-        try {
-            _getTransaction(true).commit();
-        } finally {
-            remove();
-        }
+        _getTransaction(true).commit();
     }
 
     @Override
@@ -79,7 +75,7 @@ class TransactionManagerImpl implements TransactionManager {
         synchronized (transactions) {
             TransactionImpl impl = transactions.get(Thread.currentThread());
             if (impl == null && force) {
-                transactions.put(Thread.currentThread(), impl = new TransactionImpl());
+                transactions.put(Thread.currentThread(), impl = new TransactionImpl((t) -> remove()));
             }
             return impl;
         }
@@ -97,11 +93,7 @@ class TransactionManagerImpl implements TransactionManager {
 
     @Override
     public void rollback() {
-        try {
-            _getTransaction(true).rollback();
-        } finally {
-            remove();
-        }
+        _getTransaction(true).rollback();
     }
 
     @Override
