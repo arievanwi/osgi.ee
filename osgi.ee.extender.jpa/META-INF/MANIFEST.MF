@@ -2,13 +2,14 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: JPA extender bundle
 Bundle-SymbolicName: osgi.ee.extender.jpa
-Bundle-Version: 1.0.17
+Bundle-Version: 1.0.18
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: osgi.jta.servlet.filter;version="1.0.0";uses:="javax.servlet"
 Import-Package: javax.faces.context;version="2.2.0";resolution:=optional,
  javax.faces.event;version="2.2.0";resolution:=optional,
  javax.persistence;version="2.1.0",
  javax.persistence.criteria;version="2.1.0",
+ javax.persistence.metamodel;version="2.1.0",
  javax.persistence.spi;version="2.1.0",
  javax.security.auth,
  javax.servlet;version="3.0.0";resolution:=optional,
@@ -23,7 +24,6 @@ Import-Package: javax.faces.context;version="2.2.0";resolution:=optional,
  org.osgi.framework;version="1.8.0",
  org.osgi.framework.wiring;version="1.2.0",
  org.osgi.service.cm;version="1.5.0",
- org.osgi.service.component.annotations;version="1.2.0";resolution:=optional,
  org.osgi.service.jpa;version="1.0.0",
  org.osgi.util.tracker;version="1.5.1",
  org.w3c.dom,

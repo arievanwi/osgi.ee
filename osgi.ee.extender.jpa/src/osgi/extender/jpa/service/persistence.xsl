@@ -31,10 +31,10 @@
       <validationMode><xsl:value-of select="p:validation-mode"/></validationMode>
       <properties>
         <xsl:for-each select="p:properties/p:property">
-          <entry>
-            <string><xsl:value-of select="@name"/></string>
-            <string><xsl:value-of select="@value"/></string>
-          </entry>
+          <object class="osgi.extender.jpa.service.Property">
+            <key><xsl:value-of select="@name"/></key>
+            <value><xsl:value-of select="@value"/></value>
+          </object>
         </xsl:for-each>
       </properties>
     </object>

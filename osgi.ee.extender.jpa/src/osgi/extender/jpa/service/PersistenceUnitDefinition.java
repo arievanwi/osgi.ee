@@ -20,7 +20,6 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.List;
-import java.util.Map;
 
 import javax.xml.transform.Result;
 import javax.xml.transform.Transformer;
@@ -32,6 +31,11 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.converters.basic.BooleanConverter;
+import com.thoughtworks.xstream.converters.basic.NullConverter;
+import com.thoughtworks.xstream.converters.basic.StringConverter;
+import com.thoughtworks.xstream.converters.collections.CollectionConverter;
+import com.thoughtworks.xstream.converters.reflection.ReflectionConverter;
 import com.thoughtworks.xstream.io.xml.DomDriver;
 
 /**
@@ -52,7 +56,7 @@ class PersistenceUnitDefinition {
     boolean excludeUnlisted = true;
     String cachingType;
     String validationMode;
-    Map<String, String> properties;
+    List<Property> properties;
 
     private static Result getTransformer(Result result) throws Exception {
         SAXTransformerFactory fact = (SAXTransformerFactory) TransformerFactory.newInstance();
@@ -85,7 +89,16 @@ class PersistenceUnitDefinition {
         // Do the transformation.
         trans.transform(new StreamSource(in), getTransformer(result));
         // And de-serialize it.
-        XStream stream = new XStream(new DomDriver());
+        XStream stream = new XStream(new DomDriver()) {
+			@Override
+			protected void setupConverters() {
+				registerConverter(new NullConverter(), PRIORITY_VERY_HIGH);
+                registerConverter(new BooleanConverter(), PRIORITY_NORMAL);
+                registerConverter(new StringConverter(), PRIORITY_NORMAL);
+                registerConverter(new CollectionConverter(getMapper()), PRIORITY_NORMAL);
+                registerConverter(new ReflectionConverter(getMapper(), getReflectionProvider()), PRIORITY_VERY_LOW);
+			}
+        };
         @SuppressWarnings("unchecked")
         List<PersistenceUnitDefinition> list = 
             (List<PersistenceUnitDefinition>) stream.fromXML(writer.getBuffer().toString());
@@ -106,4 +119,9 @@ class PersistenceUnitDefinition {
             return false;
         }
     }
+}
+
+class Property {
+	String key;
+	String value;
 }

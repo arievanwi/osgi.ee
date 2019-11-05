@@ -153,7 +153,9 @@ class PersistenceUnitInfoImpl implements PersistenceUnitInfo {
     @Override
     public Properties getProperties() {
         Properties props = new Properties();
-        props.putAll(definition.properties);
+        for (Property p : definition.properties) {
+        	props.put(p.key, p.value);
+        }
         return props;
     }
 
