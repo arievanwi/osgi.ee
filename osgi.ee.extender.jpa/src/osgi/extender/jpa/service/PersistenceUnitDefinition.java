@@ -90,14 +90,14 @@ class PersistenceUnitDefinition {
         trans.transform(new StreamSource(in), getTransformer(result));
         // And de-serialize it.
         XStream stream = new XStream(new DomDriver()) {
-			@Override
-			protected void setupConverters() {
-				registerConverter(new NullConverter(), PRIORITY_VERY_HIGH);
+            @Override
+            protected void setupConverters() {
+                registerConverter(new NullConverter(), PRIORITY_VERY_HIGH);
                 registerConverter(new BooleanConverter(), PRIORITY_NORMAL);
                 registerConverter(new StringConverter(), PRIORITY_NORMAL);
                 registerConverter(new CollectionConverter(getMapper()), PRIORITY_NORMAL);
                 registerConverter(new ReflectionConverter(getMapper(), getReflectionProvider()), PRIORITY_VERY_LOW);
-			}
+            }
         };
         @SuppressWarnings("unchecked")
         List<PersistenceUnitDefinition> list = 
@@ -122,6 +122,6 @@ class PersistenceUnitDefinition {
 }
 
 class Property {
-	String key;
-	String value;
+    String key;
+    String value;
 }
