@@ -1,3 +1,5 @@
+Remark: With the release of the [OSGi enterprise edition R7][1], OSGi-CDI integration is part of the specifications (chapter 152). The code here is before this release and should be handled as such. This means that it does not follow the standard although some ideas and solutions are similar.
+
 #### OSGi JEE7 extender 
 Getting JEE7 to work in OSGi can be a real pain: there are a lot of (open source) projects going on to implement more or less the 
 [OSGi R5/R6 enterprise standard][1], but to integrate them is problematic. Not the least because of the dependencies that
