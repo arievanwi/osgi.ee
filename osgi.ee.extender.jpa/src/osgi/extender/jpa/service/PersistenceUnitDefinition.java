@@ -18,45 +18,42 @@ package osgi.extender.jpa.service;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.io.StringWriter;
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.transform.Result;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.sax.SAXResult;
 import javax.xml.transform.sax.SAXTransformerFactory;
 import javax.xml.transform.sax.TransformerHandler;
-import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
-import com.thoughtworks.xstream.XStream;
-import com.thoughtworks.xstream.converters.basic.BooleanConverter;
-import com.thoughtworks.xstream.converters.basic.NullConverter;
-import com.thoughtworks.xstream.converters.basic.StringConverter;
-import com.thoughtworks.xstream.converters.collections.CollectionConverter;
-import com.thoughtworks.xstream.converters.reflection.ReflectionConverter;
-import com.thoughtworks.xstream.io.xml.DomDriver;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 /**
  * Persistence unit definition. From a standard schema. We don't care about the version, just
  * use some transformation to get the data from a standard persistence.xml.
  */
 class PersistenceUnitDefinition {
-    String version;
-    String name;
-    String transactionType;
-    String description;
-    String provider;
-    String nonJtaDs;
-    String jtaDs;
-    List<String> mappingFiles;
-    List<String> jarFiles;
-    List<String> classes;
-    boolean excludeUnlisted = true;
-    String cachingType;
-    String validationMode;
-    List<Property> properties;
+    public String version;
+    public String name;
+    public String transactionType;
+    public String description;
+    public String provider;
+    public String nonJtaDs;
+    public String jtaDs;
+    public List<String> mappingFiles;
+    public List<String> jarFiles;
+    public List<String> classes;
+    public boolean excludeUnlisted = true;
+    public String cachingType;
+    public String validationMode;
+    public List<Property> properties;
 
     private static Result getTransformer(Result result) throws Exception {
         SAXTransformerFactory fact = (SAXTransformerFactory) TransformerFactory.newInstance();
@@ -82,26 +79,68 @@ class PersistenceUnitDefinition {
     
     static List<PersistenceUnitDefinition> fromFile(InputStream in) throws Exception {
         // Prepare to get the result.
-        StringWriter writer = new StringWriter();
-        StreamResult result = new StreamResult(writer);
+    	DOMResult result = new DOMResult();
         // Construct the non-transforming transformer of the input XML stream.
         Transformer trans = TransformerFactory.newInstance().newTransformer();
         // Do the transformation.
         trans.transform(new StreamSource(in), getTransformer(result));
         // And de-serialize it.
-        XStream stream = new XStream(new DomDriver()) {
-            @Override
-            protected void setupConverters() {
-                registerConverter(new NullConverter(), PRIORITY_VERY_HIGH);
-                registerConverter(new BooleanConverter(), PRIORITY_NORMAL);
-                registerConverter(new StringConverter(), PRIORITY_NORMAL);
-                registerConverter(new CollectionConverter(getMapper()), PRIORITY_NORMAL);
-                registerConverter(new ReflectionConverter(getMapper(), getReflectionProvider()), PRIORITY_VERY_LOW);
-            }
-        };
-        @SuppressWarnings("unchecked")
-        List<PersistenceUnitDefinition> list = 
-            (List<PersistenceUnitDefinition>) stream.fromXML(writer.getBuffer().toString());
+        List<PersistenceUnitDefinition> list = new ArrayList<>();
+        NodeList nodes = result.getNode().getChildNodes();
+        for (int cnt = 0; cnt < nodes.getLength(); cnt++) {
+        	Node node = nodes.item(cnt);
+        	if ("object".equals(node.getNodeName()) && 
+        			PersistenceUnitDefinition.class.getName().equals(node.getAttributes().getNamedItem("class").getNodeValue())) {
+            	// Now process the elements in the node.
+	        	PersistenceUnitDefinition def = new PersistenceUnitDefinition();
+	        	list.add(def);
+	        	NodeList contents = node.getChildNodes();
+	        	for (int fieldIndex = 0; fieldIndex < contents.getLength(); fieldIndex++) {
+	        		Node n = contents.item(fieldIndex);
+	        		Field field = PersistenceUnitDefinition.class.getField(n.getNodeName());
+	        		if (List.class.isAssignableFrom(field.getType())) {
+	        			List<Object> l = new ArrayList<>();
+	        			field.set(def, l);
+	        			// Check the type.
+	        			ParameterizedType pt = (ParameterizedType) field.getGenericType();
+	        			Class<?> clz = (Class<?>) pt.getActualTypeArguments()[0];
+        				NodeList s = n.getChildNodes();
+	        			if (String.class.isAssignableFrom(clz)) {
+	        				for (int sub = 0; sub < s.getLength(); sub++) {
+	        					Node sn = s.item(sub);
+	        					l.add(sn.getTextContent());
+	        				}
+	        			}
+	        			else {
+	        				// Must be the Properties.
+	        				for (int sub = 0; sub < s.getLength(); sub++) {
+	        					Property p = new Property();
+	        					l.add(p);
+	        					Node sn = s.item(sub);
+	        					NodeList ssnl = sn.getChildNodes();
+	        					for (int ssub = 0; ssub < ssnl.getLength(); ssub++) {
+	        						Node ssn = ssnl.item(ssub);
+	        						Field f = Property.class.getField(ssn.getNodeName());
+	        						f.set(p, ssn.getTextContent());
+	        					}
+	        				}
+	        			}
+	        		}
+	        		else {
+	        			// Must be a string or a boolean.
+	        			if (String.class.isAssignableFrom(field.getType())) {
+	        				String value = n.getTextContent();
+	        				field.set(def, value);
+	        			}
+	        			else {
+	        				// Must be a boolean.
+	        				boolean value = Boolean.parseBoolean(n.getTextContent());
+	        				field.set(def, value);
+	        			}
+	        		}
+	        	}
+        	}
+        }
         return list;
     }
 
@@ -122,6 +161,6 @@ class PersistenceUnitDefinition {
 }
 
 class Property {
-    String key;
-    String value;
+	public String key;
+	public String value;
 }

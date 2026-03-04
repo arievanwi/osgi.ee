@@ -51,13 +51,7 @@ public class EntityManagerFactoryTracker {
     private Map<EntityManagerFactory, Map<String, Object>> factories = new HashMap<>();
     private Map<EntityManagerFactory, ServiceRegistration<EntityManager>> entityManagers = new HashMap<>();
     private TransactionManager transactionManager;
-    private Class<?> proxy;
     private BundleContext context;
-
-    public EntityManagerFactoryTracker() {
-        proxy = Proxy.getProxyClass(getClass().getClassLoader(),
-                new Class<?>[] {EntityManager.class});
-    }
 
     /**
      * Get the unit name property from the service properties.
@@ -162,9 +156,8 @@ public class EntityManagerFactoryTracker {
         InvocationHandler handler = new EntityProxyInvocationHandler(factory,
                 transactionManager, type);
         try {
-            EntityManager manager = (EntityManager) proxy.getConstructor(
-                    InvocationHandler.class).newInstance(handler);
-            return manager;
+            return (EntityManager) Proxy.newProxyInstance(getClass().getClassLoader(), new Class<?>[] {EntityManager.class},
+            		handler);
         } catch (Exception exc) {
             throw new RuntimeException(exc);
         }

@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: JPA extender bundle
 Bundle-SymbolicName: osgi.ee.extender.jpa
-Bundle-Version: 1.0.18
+Bundle-Version: 1.0.19
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: osgi.jta.servlet.filter;version="1.0.0";uses:="javax.servlet"
 Import-Package: javax.faces.context;version="2.2.0";resolution:=optional,
@@ -31,6 +31,4 @@ Import-Package: javax.faces.context;version="2.2.0";resolution:=optional,
 Service-Component: OSGI-INF/osgi.extender.jta.impl.TransactionComponent.xml,
  OSGI-INF/osgi.extender.jpa.emf.EntityManagerFactoryTracker.xml,
  OSGI-INF/osgi.extender.jta.impl.UserTransactionImpl.xml
-Bundle-ClassPath: lib/xstream-1.4.8.jar,
- .
 Bundle-Activator: osgi.extender.Activator
