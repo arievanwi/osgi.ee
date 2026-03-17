@@ -86,9 +86,10 @@ class PersistenceUnitDefinition {
         trans.transform(new StreamSource(in), getTransformer(result));
         // And de-serialize it.
         List<PersistenceUnitDefinition> list = new ArrayList<>();
-        NodeList nodes = result.getNode().getChildNodes();
+        NodeList nodes = result.getNode().getFirstChild().getChildNodes();
         for (int cnt = 0; cnt < nodes.getLength(); cnt++) {
         	Node node = nodes.item(cnt);
+        	if (node.getNodeType() != Node.ELEMENT_NODE) continue;
         	if ("object".equals(node.getNodeName()) && 
         			PersistenceUnitDefinition.class.getName().equals(node.getAttributes().getNamedItem("class").getNodeValue())) {
             	// Now process the elements in the node.

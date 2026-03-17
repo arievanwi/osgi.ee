@@ -3,7 +3,9 @@
   xmlns:p="http://xmlns.jcp.org/xml/ns/persistence" version="1.0">
   <xsl:output method="xml" indent="yes"/>
   <xsl:template match="/">
+    <units>
      <xsl:apply-templates select="p:persistence"/>
+    </units>
   </xsl:template>
   
   <xsl:template match="p:persistence/p:persistence-unit">
